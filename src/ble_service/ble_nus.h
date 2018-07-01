@@ -188,9 +188,8 @@ struct ble_nus_s
 {
     uint8_t                         uuid_type;          /**< UUID type for Nordic UART Service Base UUID. */
     uint16_t                        service_handle;     /**< Handle of Nordic UART Service (as provided by the SoftDevice). */
-    ble_gatts_char_handles_t        ota_handles;         /**< Handles related to the ota characteristic (as provided by the SoftDevice). */
-    ble_gatts_char_handles_t        ldt_handles;         /**< Handles related to the large data transform characteristic (as provided by the SoftDevice). */
-    ble_gatts_char_handles_t        cmd_handles;         /**< Handles related to the command characteristic (as provided by the SoftDevice). */
+    ble_gatts_char_handles_t        tx_handles;         /**< Handles related to the TX characteristic (as provided by the SoftDevice). */
+    ble_gatts_char_handles_t        rx_handles;         /**< Handles related to the RX characteristic (as provided by the SoftDevice). */
     blcm_link_ctx_storage_t * const p_link_ctx_storage; /**< Pointer to link context storage with handles of all current connections and its context. */
     ble_nus_data_handler_t          data_handler;       /**< Event handler to be called for handling received data. */
 };

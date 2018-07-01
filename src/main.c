@@ -90,6 +90,10 @@
 #include "fds.h"
 #include "ble_conn_state.h"
 
+
+
+#include "general.h"
+
 #define SEC_PARAM_BOND                  1                                           /**< Perform bonding. */
 #define SEC_PARAM_MITM                  0                                           /**< Man In The Middle protection not required. */
 #define SEC_PARAM_LESC                  0                                           /**< LE Secure Connections not enabled. */
@@ -105,14 +109,16 @@
 
 #define APP_BLE_CONN_CFG_TAG            1                                           /**< A tag identifying the SoftDevice BLE configuration. */
 
-#define DEVICE_NAME                     "Nordic_UART"                               /**< Name of device. Will be included in the advertising data. */
+char m001BraodcastName[16] = "M001A";
+
+#define DEVICE_NAME                     m001BraodcastName                               /**< Name of device. Will be included in the advertising data. */
 #define NUS_SERVICE_UUID_TYPE           BLE_UUID_TYPE_VENDOR_BEGIN                  /**< UUID type for the Nordic UART Service (vendor specific). */
 
 #define APP_BLE_OBSERVER_PRIO           3                                           /**< Application's BLE observer priority. You shouldn't need to modify this value. */
 
-#define APP_ADV_INTERVAL                64                                          /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
+#define APP_ADV_INTERVAL                800                                          /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
 
-#define APP_ADV_DURATION                18000                                       /**< The advertising duration (180 seconds) in units of 10 milliseconds. */
+#define APP_ADV_DURATION                0                                       /**< The advertising duration (180 seconds) in units of 10 milliseconds. */
 
 #define MIN_CONN_INTERVAL               MSEC_TO_UNITS(20, UNIT_1_25_MS)             /**< Minimum acceptable connection interval (20 ms), Connection interval uses 1.25 ms units. */
 #define MAX_CONN_INTERVAL               MSEC_TO_UNITS(75, UNIT_1_25_MS)             /**< Maximum acceptable connection interval (75 ms), Connection interval uses 1.25 ms units. */
@@ -139,9 +145,6 @@ static ble_uuid_t m_adv_uuids[]          =                                      
 {
     {BLE_UUID_NUS_SERVICE, NUS_SERVICE_UUID_TYPE}
 };
-
-
-
 
 /**@brief Handler for shutdown preparation.
  *
@@ -612,12 +615,7 @@ static void conn_params_init(void)
  */
 static void sleep_mode_enter(void)
 {
-    uint32_t err_code = bsp_indication_set(BSP_INDICATE_IDLE);
-    APP_ERROR_CHECK(err_code);
-
-    // Prepare wakeup buttons.
-    err_code = bsp_btn_ble_sleep_mode_prepare();
-    APP_ERROR_CHECK(err_code);
+    uint32_t err_code;
 
     // Go to system-off mode (this function will not return; wakeup will cause a reset).
     err_code = sd_power_system_off();
@@ -633,16 +631,14 @@ static void sleep_mode_enter(void)
  */
 static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
 {
-    uint32_t err_code;
+
 
     switch (ble_adv_evt)
     {
         case BLE_ADV_EVT_FAST:
-            err_code = bsp_indication_set(BSP_INDICATE_ADVERTISING);
-            APP_ERROR_CHECK(err_code);
             break;
         case BLE_ADV_EVT_IDLE:
-            sleep_mode_enter();
+            //sleep_mode_enter();
             break;
         default:
             break;
@@ -662,9 +658,9 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
     switch (p_ble_evt->header.evt_id)
     {
         case BLE_GAP_EVT_CONNECTED:
+            
             NRF_LOG_INFO("Connected");
-            err_code = bsp_indication_set(BSP_INDICATE_CONNECTED);
-            APP_ERROR_CHECK(err_code);
+            SetBleEvent(BLE_CONNECT_EVENT);
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
             APP_ERROR_CHECK(err_code);
@@ -672,6 +668,7 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 
         case BLE_GAP_EVT_DISCONNECTED:
             NRF_LOG_INFO("Disconnected");
+            SetBleEvent(BLE_DISCONNECT_EVENT);
             // LED indication will be changed when advertising starts.
             m_conn_handle = BLE_CONN_HANDLE_INVALID;
             break;
@@ -839,7 +836,7 @@ void uart_event_handle(app_uart_evt_t * p_event)
                 do
                 {
                     uint16_t length = (uint16_t)index;
-                    err_code = ble_nus_data_send(&m_nus, data_array, &length, m_conn_handle);
+                    err_code = ble_nus_data_send(&m_nus, data_array, &length, m_conn_handle, m_nus.tx_handles.value_handle);
                     if ( (err_code != NRF_ERROR_INVALID_STATE) && (err_code != NRF_ERROR_BUSY) &&
                          (err_code != NRF_ERROR_NOT_FOUND) )
                     {
@@ -909,7 +906,7 @@ static void advertising_init(void)
 
     init.advdata.name_type          = BLE_ADVDATA_FULL_NAME;
     init.advdata.include_appearance = false;
-    init.advdata.flags              = BLE_GAP_ADV_FLAGS_LE_ONLY_LIMITED_DISC_MODE;
+    init.advdata.flags              = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 
     init.srdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
     init.srdata.uuids_complete.p_uuids  = m_adv_uuids;
@@ -984,19 +981,54 @@ static void idle_state_handle(void)
 //    APP_ERROR_CHECK(err_code);
 //}
 
+/**@brief Function for stop advertising.
+ */
+void advertising_stop(void)
+{
+    uint32_t err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_IDLE);
+    APP_ERROR_CHECK(err_code);
+}
+
+/**@brief Function for starting advertising.
+ */
+void ble_disconnect_req(void)
+{
+    uint32_t err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+    APP_ERROR_CHECK(err_code);
+}
+
+void Ble_CommandHandleSend(uint8_t *data, uint16_t length)
+{
+    ble_nus_data_send(&m_nus, data, &length, m_conn_handle, m_nus.tx_handles.value_handle);
+}
+
+
+void Ble_ldtHandleSend(uint8_t *data, uint16_t length)
+{
+    ble_nus_data_send(&m_nus, data, &length, m_conn_handle, m_nus.rx_handles.value_handle);
+}
 
 /**@brief Application main function.
  */
 int main(void)
 {
-    bool erase_bonds;
 
+    
     // Initialize.
+#ifdef      SUPPORT_UART_PRINTF
+    //nrf_gpio_cfg_input(RX_PIN_NUMBER, BUTTON_PULL);
     uart_init();
-    log_init();
+    nrf_gpio_cfg_input(RX_PIN_NUMBER,NRF_GPIO_PIN_PULLUP);
+#endif
+
+   log_init();
+
     timers_init();
-    buttons_leds_init(&erase_bonds);
+
+    M001_AppInit();
     power_management_init();
+    
+    
     ble_stack_init();
     gap_params_init();
     gatt_init();
@@ -1005,13 +1037,17 @@ int main(void)
     conn_params_init();
 
     // Start execution.
+#ifdef      SUPPORT_UART_PRINTF
     printf("\r\nUART started.\r\n");
-    NRF_LOG_INFO("Debug logging for UART over RTT started.");
-    advertising_start(erase_bonds);
+#endif
+   NRF_LOG_INFO("Debug logging for UART over RTT started.");
+    //advertising_start(false);
+
 
     // Enter main loop.
     for (;;)
     {
+        OsalRun();        
         idle_state_handle();
     }
 }

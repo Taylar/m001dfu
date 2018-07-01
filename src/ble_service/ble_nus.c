@@ -54,14 +54,14 @@
 #include "nrf_log.h"
 NRF_LOG_MODULE_REGISTER();
 
-#define BLE_UUID_OTA_CHARACTERISTIC 0x8803               /**< The UUID of the OTA Characteristic. */
-#define BLE_UUID_LDT_CHARACTERISTIC 0x8802               /**< The UUID of the large data transform Characteristic. */
-#define BLE_UUID_CMD_CHARACTERISTIC 0x8801               /**< The UUID of the command Characteristic. */
+
+#define BLE_UUID_NUS_TX_CHARACTERISTIC 0x8802               /**< The UUID of the TX Characteristic. */
+#define BLE_UUID_NUS_RX_CHARACTERISTIC 0x8801               /**< The UUID of the RX Characteristic. */
 
 #define BLE_NUS_MAX_RX_CHAR_LEN        BLE_NUS_MAX_DATA_LEN /**< Maximum length of the RX Characteristic (in bytes). */
 #define BLE_NUS_MAX_TX_CHAR_LEN        BLE_NUS_MAX_DATA_LEN /**< Maximum length of the TX Characteristic (in bytes). */
 
-#define HTN_BASE_UUID                  {{0x9E, 0x88, 0xDC, 0x24, 0x0E, 0x88, 0xA9, 0xE0, 0x93, 0xF3, 0xA3, 0xB5, 0x00, 0x00, 0x40, 0x6E}} /**< Used vendor specific UUID. */
+#define NUS_BASE_UUID                  {{0x9E, 0x88, 0xDC, 0x24, 0x0E, 0x88, 0xA9, 0xE0, 0x93, 0xF3, 0xA3, 0xB5, 0x00, 0x00, 0x40, 0x6E}} /**< Used vendor specific UUID. */
 
 
 /**@brief Function for handling the @ref BLE_GAP_EVT_CONNECTED event from the SoftDevice.
@@ -93,7 +93,7 @@ static void on_connect(ble_nus_t * p_nus, ble_evt_t const * p_ble_evt)
     gatts_val.offset  = 0;
 
     err_code = sd_ble_gatts_value_get(p_ble_evt->evt.gap_evt.conn_handle,
-                                      p_nus->ldt_handles.cccd_handle,
+                                      p_nus->rx_handles.cccd_handle,
                                       &gatts_val);
 
     if ((err_code == NRF_SUCCESS)     &&
@@ -142,7 +142,7 @@ static void on_write(ble_nus_t * p_nus, ble_evt_t const * p_ble_evt)
     evt.conn_handle = p_ble_evt->evt.gatts_evt.conn_handle;
     evt.p_link_ctx  = p_client;
 
-    if ((p_evt_write->handle == p_nus->ota_handles.cccd_handle) &&
+    if ((p_evt_write->handle == p_nus->tx_handles.cccd_handle) &&
         (p_evt_write->len == 2))
     {
         if (p_client != NULL)
@@ -165,26 +165,13 @@ static void on_write(ble_nus_t * p_nus, ble_evt_t const * p_ble_evt)
 
         }
     }
+    else if ((p_evt_write->handle == p_nus->rx_handles.value_handle) &&
+             (p_nus->data_handler != NULL))
+    {
+        evt.type                  = BLE_NUS_EVT_RX_DATA;
+        evt.params.rx_data.p_data = p_evt_write->data;
+        evt.params.rx_data.length = p_evt_write->len;
 
-    else if ((p_evt_write->handle == p_nus->ldt_handles.value_handle))
-    {
-        evt.type                  = BLE_NUS_EVT_LDT_DATA;
-        evt.params.rx_data.p_data = p_evt_write->data;
-        evt.params.rx_data.length = p_evt_write->len;
-        p_nus->data_handler(&evt);
-    }
-    else if(p_evt_write->handle == p_nus->cmd_handles.value_handle)
-    {
-        evt.type                  = BLE_NUS_EVT_CMD_DATA;
-        evt.params.rx_data.p_data = p_evt_write->data;
-        evt.params.rx_data.length = p_evt_write->len;
-        p_nus->data_handler(&evt);
-    }
-		else if(p_evt_write->handle == p_nus->ota_handles.value_handle)
-    {
-        evt.type                  = BLE_NUS_EVT_OTA_DATA;
-        evt.params.rx_data.p_data = p_evt_write->data;
-        evt.params.rx_data.length = p_evt_write->len;
         p_nus->data_handler(&evt);
     }
     else
@@ -227,6 +214,7 @@ static void on_hvx_tx_complete(ble_nus_t * p_nus, ble_evt_t const * p_ble_evt)
     }
 }
 
+
 /**@brief Function for adding TX characteristic.
  *
  * @param[in] p_nus       Nordic UART Service structure.
@@ -234,7 +222,7 @@ static void on_hvx_tx_complete(ble_nus_t * p_nus, ble_evt_t const * p_ble_evt)
  *
  * @return NRF_SUCCESS on success, otherwise an error code.
  */
-static uint32_t ota_char_add(ble_nus_t * p_nus, ble_nus_init_t const * p_nus_init)
+static uint32_t tx_char_add(ble_nus_t * p_nus, ble_nus_init_t const * p_nus_init)
 {
     /**@snippet [Adding proprietary characteristic to the SoftDevice] */
     ble_gatts_char_md_t char_md;
@@ -263,7 +251,7 @@ static uint32_t ota_char_add(ble_nus_t * p_nus, ble_nus_init_t const * p_nus_ini
     char_md.p_sccd_md        		 = NULL;
 
     ble_uuid.type = p_nus->uuid_type;
-    ble_uuid.uuid = BLE_UUID_OTA_CHARACTERISTIC;
+    ble_uuid.uuid = BLE_UUID_NUS_TX_CHARACTERISTIC;
 
     memset(&attr_md, 0, sizeof(attr_md));
 
@@ -286,7 +274,7 @@ static uint32_t ota_char_add(ble_nus_t * p_nus, ble_nus_init_t const * p_nus_ini
     return sd_ble_gatts_characteristic_add(p_nus->service_handle,
                                            &char_md,
                                            &attr_char_value,
-                                           &p_nus->ota_handles);
+                                           &p_nus->tx_handles);
     /**@snippet [Adding proprietary characteristic to the SoftDevice] */
 }
 
@@ -298,7 +286,7 @@ static uint32_t ota_char_add(ble_nus_t * p_nus, ble_nus_init_t const * p_nus_ini
  *
  * @return NRF_SUCCESS on success, otherwise an error code.
  */
-static uint32_t ldt_char_add(ble_nus_t * p_nus, const ble_nus_init_t * p_nus_init)
+static uint32_t rx_char_add(ble_nus_t * p_nus, const ble_nus_init_t * p_nus_init)
 {
     ble_gatts_char_md_t char_md;
 	ble_gatts_attr_md_t cccd_md;
@@ -326,7 +314,7 @@ static uint32_t ldt_char_add(ble_nus_t * p_nus, const ble_nus_init_t * p_nus_ini
     char_md.p_sccd_md                = NULL;
 
     ble_uuid.type = p_nus->uuid_type;
-    ble_uuid.uuid = BLE_UUID_LDT_CHARACTERISTIC;
+    ble_uuid.uuid = BLE_UUID_NUS_RX_CHARACTERISTIC;
 
     memset(&attr_md, 0, sizeof(attr_md));
 
@@ -349,69 +337,7 @@ static uint32_t ldt_char_add(ble_nus_t * p_nus, const ble_nus_init_t * p_nus_ini
     return sd_ble_gatts_characteristic_add(p_nus->service_handle,
                                            &char_md,
                                            &attr_char_value,
-                                           &p_nus->ldt_handles);
-}
-
-
-/**@brief Function for adding RX characteristic.
- *
- * @param[in] p_nus       Nordic UART Service structure.
- * @param[in] p_nus_init  Information needed to initialize the service.
- *
- * @return NRF_SUCCESS on success, otherwise an error code.
- */
-static uint32_t cmd_char_add(ble_nus_t * p_nus, const ble_nus_init_t * p_nus_init)
-{
-    ble_gatts_char_md_t char_md;
-	ble_gatts_attr_md_t cccd_md;
-    ble_gatts_attr_t    attr_char_value;
-    ble_uuid_t          ble_uuid;
-    ble_gatts_attr_md_t attr_md;
-
-	memset(&cccd_md, 0, sizeof(cccd_md));
-
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.read_perm);
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&cccd_md.write_perm);
-
-    cccd_md.vloc = BLE_GATTS_VLOC_STACK;
-	
-    memset(&char_md, 0, sizeof(char_md));
-
-    char_md.char_props.write         = 1;
-    char_md.char_props.write_wo_resp = 1;
-	char_md.char_props.read			 = 1;
-	char_md.char_props.notify		 = 1;
-    char_md.p_char_user_desc         = NULL;
-    char_md.p_char_pf                = NULL;
-    char_md.p_user_desc_md           = NULL;
-    char_md.p_cccd_md                = &cccd_md;
-    char_md.p_sccd_md                = NULL;
-
-    ble_uuid.type = p_nus->uuid_type;
-    ble_uuid.uuid = BLE_UUID_CMD_CHARACTERISTIC;
-
-    memset(&attr_md, 0, sizeof(attr_md));
-
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.read_perm);
-    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&attr_md.write_perm);
-
-    attr_md.vloc    = BLE_GATTS_VLOC_STACK;
-    attr_md.rd_auth = 0;
-    attr_md.wr_auth = 0;
-    attr_md.vlen    = 1;
-
-    memset(&attr_char_value, 0, sizeof(attr_char_value));
-
-    attr_char_value.p_uuid    = &ble_uuid;
-    attr_char_value.p_attr_md = &attr_md;
-    attr_char_value.init_len  = 1;
-    attr_char_value.init_offs = 0;
-    attr_char_value.max_len   = BLE_NUS_MAX_RX_CHAR_LEN;
-
-    return sd_ble_gatts_characteristic_add(p_nus->service_handle,
-                                           &char_md,
-                                           &attr_char_value,
-                                           &p_nus->cmd_handles);
+                                           &p_nus->rx_handles);
 }
 
 
@@ -449,7 +375,7 @@ uint32_t ble_nus_init(ble_nus_t * p_nus, ble_nus_init_t const * p_nus_init)
 {
     ret_code_t    err_code;
     ble_uuid_t    ble_uuid;
-    ble_uuid128_t nus_base_uuid = HTN_BASE_UUID;
+    ble_uuid128_t nus_base_uuid = NUS_BASE_UUID;
 
     VERIFY_PARAM_NOT_NULL(p_nus);
     VERIFY_PARAM_NOT_NULL(p_nus_init);
@@ -472,16 +398,12 @@ uint32_t ble_nus_init(ble_nus_t * p_nus, ble_nus_init_t const * p_nus_init)
     /**@snippet [Adding proprietary Service to the SoftDevice] */
     VERIFY_SUCCESS(err_code);
 
-    // Add the large data transform Characteristic.
-    err_code = ldt_char_add(p_nus, p_nus_init);
+    // Add the RX Characteristic.
+    err_code = rx_char_add(p_nus, p_nus_init);
     VERIFY_SUCCESS(err_code);
 
-    // Add the OTA Characteristic.
-    err_code = ota_char_add(p_nus, p_nus_init);
-    VERIFY_SUCCESS(err_code);
-	
-	// Add the cmd Characteristic.
-    err_code = cmd_char_add(p_nus, p_nus_init);
+    // Add the TX Characteristic.
+    err_code = tx_char_add(p_nus, p_nus_init);
     VERIFY_SUCCESS(err_code);
 
     return NRF_SUCCESS;
