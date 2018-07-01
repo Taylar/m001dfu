@@ -91,7 +91,7 @@ void  M001_AppInit(void)
     bspAccel.BspInterfaceDisable();
 	
 
-	rtcApp.Init();
+	  rtcApp.Init();
     rtcApp.Cb_SecIsrInit(rtcisr);
     rtcApp.Cb_HalfSecIsrInit(rtcNull);
     rtcApp.Cb_MinIsrInit(rtcNull);
@@ -114,7 +114,7 @@ void  M001_AppInit(void)
     
 	ExtflashAppInit();
 
-    SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 125, 125, 3);
+    //SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 125, 125, 3);
 
 }
 
