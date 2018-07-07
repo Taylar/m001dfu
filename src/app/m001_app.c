@@ -112,7 +112,7 @@ void  M001_AppInit(void)
     keyRegister.HoldKey6sIsrInit_S1(SYS_APP_HANDLE_DAILY, DailyHoldKey6sS1Isr);
     keyRegister.HoldKey6sIsrInit_S2(SYS_APP_HANDLE_DAILY, DailyHoldKey6sS2Isr);
     
-	ExtflashAppInit();
+	  ExtflashAppInit();
 
     //SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 125, 125, 3);
 
@@ -188,7 +188,7 @@ void M001_3Hlongkey(void)
 			accel.bsp->BspInterfaceEnable();
 			bspAccel.SampleSet();
 			accel.bsp->BspInterfaceDisable();
-			advertising_start(false);
+			advertising_start(true);
 		}
 	}
 	else if(sysMode == SYS_WORK_MODE)

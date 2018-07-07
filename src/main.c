@@ -104,7 +104,11 @@
 #define SEC_PARAM_MAX_KEY_SIZE          16                                          /**< Maximum encryption key size. */
 
 
+static pm_peer_id_t m_whitelist_peers[BLE_GAP_WHITELIST_ADDR_MAX_COUNT];            /**< List of peers currently in the whitelist. */
+static uint32_t     m_whitelist_peer_cnt;                                           /**< Number of peers currently in the whitelist. */
+static uint16_t     m_cur_conn_handle = BLE_CONN_HANDLE_INVALID;                    /**< Handle of the current connection. */
 
+#define SECURITY_REQUEST_DELAY         APP_TIMER_TICKS(1500)                        /**< Delay after connection until security request is sent, if necessary (ticks). */
 
 
 #define APP_BLE_CONN_CFG_TAG            1                                           /**< A tag identifying the SoftDevice BLE configuration. */
@@ -133,11 +137,13 @@ char m001BraodcastName[16] = "M001A";
 #define UART_TX_BUF_SIZE                256                                         /**< UART TX buffer size. */
 #define UART_RX_BUF_SIZE                256                                         /**< UART RX buffer size. */
 
+APP_TIMER_DEF(m_sec_req_timer_id);                                                  /**< Security request timer. The timer lets us start pairing request if one does not arrive from the Central. */
 
 BLE_NUS_DEF(m_nus, NRF_SDH_BLE_TOTAL_LINK_COUNT);                                   /**< BLE NUS service instance. */
 NRF_BLE_GATT_DEF(m_gatt);                                                           /**< GATT module instance. */
 NRF_BLE_QWR_DEF(m_qwr);                                                             /**< Context for the Queued Write module.*/
 BLE_ADVERTISING_DEF(m_advertising);                                                 /**< Advertising module instance. */
+//BLE_DB_DISCOVERY_DEF(m_db_disc);
 
 static uint16_t   m_conn_handle          = BLE_CONN_HANDLE_INVALID;                 /**< Handle of the current connection. */
 static uint16_t   m_ble_nus_max_data_len = BLE_GATT_ATT_MTU_DEFAULT - 3;            /**< Maximum length of data (in bytes) that can be transmitted to the peer by the Nordic UART service module. */
@@ -257,6 +263,31 @@ static void delete_bonds(void)
     APP_ERROR_CHECK(err_code);
 }
 
+/**@brief Fetch the list of peer manager peer IDs.
+ *
+ * @param[inout] p_peers   The buffer where to store the list of peer IDs.
+ * @param[inout] p_size    In: The size of the @p p_peers buffer.
+ *                         Out: The number of peers copied in the buffer.
+ */
+static void peer_list_get(pm_peer_id_t * p_peers, uint32_t * p_size)
+{
+    pm_peer_id_t peer_id;
+    uint32_t     peers_to_copy;
+
+    peers_to_copy = (*p_size < BLE_GAP_WHITELIST_ADDR_MAX_COUNT) ?
+                     *p_size : BLE_GAP_WHITELIST_ADDR_MAX_COUNT;
+
+    peer_id = pm_next_peer_id_get(PM_PEER_ID_INVALID);
+    *p_size = 0;
+
+    while ((peer_id != PM_PEER_ID_INVALID) && (peers_to_copy--))
+    {
+        p_peers[(*p_size)++] = peer_id;
+        peer_id = pm_next_peer_id_get(peer_id);
+    }
+}
+
+
 /**@brief Function for starting advertising.
  */
 void advertising_start(bool erase_bonds)
@@ -268,6 +299,24 @@ void advertising_start(bool erase_bonds)
     }
     else
     {
+//			  ret_code_t ret;
+
+//        memset(m_whitelist_peers, PM_PEER_ID_INVALID, sizeof(m_whitelist_peers));
+//        m_whitelist_peer_cnt = (sizeof(m_whitelist_peers) / sizeof(pm_peer_id_t));
+
+//        peer_list_get(m_whitelist_peers, &m_whitelist_peer_cnt);
+
+//        ret = pm_whitelist_set(m_whitelist_peers, m_whitelist_peer_cnt);
+//        APP_ERROR_CHECK(ret);
+
+//        // Setup the device identies list.
+//        // Some SoftDevices do not support this feature.
+//        ret = pm_device_identities_list_set(m_whitelist_peers, m_whitelist_peer_cnt);
+//        if (ret != NRF_ERROR_NOT_SUPPORTED)
+//        {
+//            APP_ERROR_CHECK(ret);
+//        }
+				
         uint32_t err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_FAST);
         APP_ERROR_CHECK(err_code);
 
@@ -298,6 +347,10 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
                          ble_conn_state_role(p_evt->conn_handle),
                          p_evt->conn_handle,
                          p_evt->params.conn_sec_succeeded.procedure);
+					
+						// Discover peer's services.
+//            err_code  = ble_db_discovery_start(&m_db_disc, p_evt->conn_handle);
+//            APP_ERROR_CHECK(err_code);
         } break;
 
         case PM_EVT_CONN_SEC_FAILED:
@@ -426,11 +479,48 @@ void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
     app_error_handler(DEAD_BEEF, line_num, p_file_name);
 }
 
+
+/**@brief Function for handling the security request timer time-out.
+ *
+ * @details This function is called each time the security request timer expires.
+ *
+ * @param[in] p_context  Pointer used for passing context information from the
+ *                       app_start_timer() call to the time-out handler.
+ */
+static void sec_req_timeout_handler(void * p_context)
+{
+    ret_code_t           ret;
+    pm_conn_sec_status_t status;
+
+    if (m_conn_handle != BLE_CONN_HANDLE_INVALID)
+    {
+        ret = pm_conn_sec_status_get(m_conn_handle, &status);
+        APP_ERROR_CHECK(ret);
+
+        // If the link is still not secured by the peer, initiate security procedure.
+        if (!status.encrypted)
+        {
+            ret = pm_conn_secure(m_conn_handle, false);
+            if (ret != NRF_ERROR_INVALID_STATE)
+            {
+                APP_ERROR_CHECK(ret);
+            }
+        }
+    }
+}
+
+
 /**@brief Function for initializing the timer module.
  */
 static void timers_init(void)
 {
     ret_code_t err_code = app_timer_init();
+    APP_ERROR_CHECK(err_code);
+	
+		// Create security request timer.
+    err_code = app_timer_create(&m_sec_req_timer_id,
+                           APP_TIMER_MODE_SINGLE_SHOT,
+                           sec_req_timeout_handler);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -675,6 +765,7 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
 static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 {
     uint32_t err_code;
+		ret_code_t           ret;
 
     switch (p_ble_evt->header.evt_id)
     {
@@ -685,6 +776,10 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
             APP_ERROR_CHECK(err_code);
+						
+						err_code = app_timer_start(m_sec_req_timer_id, SECURITY_REQUEST_DELAY, NULL);
+            APP_ERROR_CHECK(err_code);
+						
             break;
 
         case BLE_GAP_EVT_DISCONNECTED:
@@ -706,11 +801,26 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             APP_ERROR_CHECK(err_code);
         } break;
 
-        case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
-            // Pairing not supported
-            err_code = sd_ble_gap_sec_params_reply(m_conn_handle, BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP, NULL, NULL);
-            APP_ERROR_CHECK(err_code);
-            break;
+//        case BLE_GAP_EVT_SEC_PARAMS_REQUEST:
+//						
+//						// Pairing not supported
+//               //err_code = sd_ble_gap_sec_params_reply(m_conn_handle, BLE_GAP_SEC_STATUS_PAIRING_NOT_SUPP, NULL, NULL);
+//						ble_gap_sec_params_t sec_param;
+//						sec_param.bond           = SEC_PARAM_BOND;
+//						sec_param.mitm           = SEC_PARAM_MITM;
+//						sec_param.lesc           = SEC_PARAM_LESC;
+//						sec_param.keypress       = SEC_PARAM_KEYPRESS;
+//						sec_param.io_caps        = SEC_PARAM_IO_CAPABILITIES;
+//						sec_param.oob            = SEC_PARAM_OOB;
+//						sec_param.min_key_size   = SEC_PARAM_MIN_KEY_SIZE;
+//						sec_param.max_key_size   = SEC_PARAM_MAX_KEY_SIZE;
+//						sec_param.kdist_own.enc  = 1;
+//						sec_param.kdist_own.id   = 1;
+//						sec_param.kdist_peer.enc = 1;
+//						sec_param.kdist_peer.id  = 1;
+//						err_code = sd_ble_gap_sec_params_reply(m_conn_handle, BLE_GAP_SEC_STATUS_SUCCESS, &sec_param, NULL);
+//            APP_ERROR_CHECK(err_code);
+//            break;
 
         case BLE_GATTS_EVT_SYS_ATTR_MISSING:
             // No system attributes have been stored.
@@ -731,7 +841,12 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
                                              BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
             APP_ERROR_CHECK(err_code);
             break;
-
+				case BLE_GAP_EVT_AUTH_STATUS:
+//						if(p_ble_evt->evt.gap_evt.params.auth_status.auth_status != BLE_GAP_SEC_STATUS_SUCCESS)
+//						{
+//								err_code = sd_ble_gap_disconnect(m_conn_handle, BLE_HCI_REMOTE_USER_TERMINATED_CONNECTION);
+//								APP_ERROR_CHECK(err_code);
+//						}
         default:
             // No implementation needed.
             break;
@@ -1045,8 +1160,8 @@ int main(void)
    log_init();
 
     timers_init();
-
-    M001_AppInit();
+		M001_AppInit();
+    
     power_management_init();
     
     
@@ -1056,6 +1171,8 @@ int main(void)
     services_init();
     advertising_init();
     conn_params_init();
+		peer_manager_init();
+		
 
     // Start execution.
 #ifdef      SUPPORT_UART_PRINTF
