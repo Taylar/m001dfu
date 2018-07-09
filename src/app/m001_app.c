@@ -150,7 +150,7 @@ void M001_3Hshortkey(void)
 		if(bleMode == BLE_CONNECT_MODE)
 		{
 			SetSinglePort(GREEN_LED, LED_PORT_ACTIVE_STATE, 1000, 10, 1);
-			BlePack(DEVICE_REQ_TAKE_PIC, &bleSendMsg);
+			// BlePack(DEVICE_REQ_TAKE_PIC, &bleSendMsg);
 		}
 
 		if(appPeerModeTime && (phoneState == PHONE_STATE_PEER))

@@ -71,7 +71,7 @@ void BlePack(uint32_t command, protocal_msg_t *msg)
 
 
 		case DEVICE_CUR_STEP:
-		msg->length = 0;
+		msg->length = 4;
 
 		msg->load[0] = (uint8_t)(dailyTotalStep >> 24);
 		msg->load[1] = (uint8_t)(dailyTotalStep >> 16);
@@ -90,6 +90,19 @@ void BlePack(uint32_t command, protocal_msg_t *msg)
 
 		case DEVICE_REQ_TAKE_PIC:
 		msg->length = 0;
+		break;
+
+		case DEVICE_SPORT_AIM:
+		if(msg->load[0] == 0x01)
+		{
+			msg->load[0] = 0x01;
+
+			msg->load[0] = (uint8_t)(dailyStepAim >> 24);
+			msg->load[1] = (uint8_t)(dailyStepAim >> 16);
+			msg->load[2] = (uint8_t)(dailyStepAim >> 8);
+			msg->load[3] = (uint8_t)(dailyStepAim);
+			msg->length = 5;
+		}
 		break;
 
 		default:
@@ -168,12 +181,19 @@ void BleProtocal(protocal_msg_t *msg)
 
 
 		case APP_SET_STEP_AIM:
-		dailyStepAim = (((uint32_t)msg->load[0]) << 24) + 
-						(((uint32_t)msg->load[1]) << 16) +
-						(((uint32_t)msg->load[2]) << 8) +
-						(((uint32_t)msg->load[3]));
+		if(msg->load[0] == 0x01)
+		{
+			BlePack(DEVICE_SPORT_AIM, msg);
+		}
+		else
+		{
+			dailyStepAim = (((uint32_t)msg->load[1]) << 24) + 
+							(((uint32_t)msg->load[2]) << 16) +
+							(((uint32_t)msg->load[3]) << 8) +
+							(((uint32_t)msg->load[4]));
 
-	    BlePack(DEVICE_INFO, msg);
+		    BlePack(DEVICE_COM_ACK, msg);
+		}
 		break;
 
 
@@ -193,6 +213,7 @@ void BleProtocal(protocal_msg_t *msg)
 			phoneState = PHONE_STATE_NORMAL;
 			takePicModeTime = 0;
 		}
+	    BlePack(DEVICE_COM_ACK, msg);
 		break;
 
 
@@ -217,10 +238,13 @@ void BleProtocal(protocal_msg_t *msg)
 				&dailyRtc);
 
 			dailyRtc.zone = 0;
-
 			if((int8_t)msg->load[5] < 0)
 			{
-				temp = -(int8_t)msg->load[4];
+				temp = -(int8_t)msg->load[5];
+			}
+			else
+			{
+				temp = msg->load[5];
 			}
 			dailyRtc2.zone = ((temp / 10) << 8) + (temp % 10 * 10);
 
