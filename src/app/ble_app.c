@@ -97,10 +97,10 @@ void BlePack(uint32_t command, protocal_msg_t *msg)
 		{
 			msg->load[0] = 0x01;
 
-			msg->load[0] = (uint8_t)(dailyStepAim >> 24);
-			msg->load[1] = (uint8_t)(dailyStepAim >> 16);
-			msg->load[2] = (uint8_t)(dailyStepAim >> 8);
-			msg->load[3] = (uint8_t)(dailyStepAim);
+			msg->load[1] = (uint8_t)(dailyStepAim >> 24);
+			msg->load[2] = (uint8_t)(dailyStepAim >> 16);
+			msg->load[3] = (uint8_t)(dailyStepAim >> 8);
+			msg->load[4] = (uint8_t)(dailyStepAim);
 			msg->length = 5;
 		}
 		break;
@@ -254,7 +254,7 @@ void BleProtocal(protocal_msg_t *msg)
 			movtMsg.cur = ((uint16_t)msg->load[6] << 8) + msg->load[7];
 			movtMsg.aim = ExchangeTimeforCount(dailyRtc2.hour, dailyRtc2.min, dailyRtc2.sec);
 			
-			movtMsg.id  = MOVT_MSG_MC_SET_CUR;
+			movtMsg.id  = MOVT_MSG_MC_SET_CUR_FORWARD;
 			MovtEventSet(movtMsg);
 			if(msg->load[9] == 1)
 			{

@@ -58,11 +58,7 @@ void DailyStepProcess(void)
 				if(phoneState == PHONE_STATE_DAILY_SPORT)
 				{
 					dailyTotalStepTemp          = (uint16_t)dailyTotalStep;
-//				    bleMsg.id                   = BLE_MSG_SEND;
-//					bleMsg.u.protocal           = DAILY_SPORTSCENE_PROTOCAL;
-//					bleMsg.u.protocal.att.load.content.parameter[0]  = (uint8_t)(dailyTotalStepTemp >> 8);
-//					bleMsg.u.protocal.att.load.content.parameter[1]  = (uint8_t)(dailyTotalStepTemp);
-//					ble.EventSet(bleMsg);
+					BlePack(DEVICE_CUR_STEP, &bleSendMsg);
 				}
             }
 			
@@ -74,14 +70,6 @@ void DailyStepProcess(void)
 				    rejectCall++;
 					if(rejectCall >= 2)
 					{
-//                        bleMsg.id           = BLE_MSG_SEND;						
-//						bleMsg.u.protocal   = AUTHOR_PASS_PROTOCAL;
-//						ble.EventSet(bleMsg);
-//						xTimerStop(AuthTimeOutTimer,0);        
-//						multiModule.EventSet(NULL_GREEN_LED);
-//						multiModule.EventSet(AUTHOR_MOTO);        
-//						phoneState      = PHONE_STATE_NORMAL;
-//						rejectCall = 0;
 						return;
 					}				
 				 }
@@ -95,20 +83,7 @@ void DailyStepProcess(void)
 				     rejectCall++;
 					 if(rejectCall >= 3)
 					 {
-//						 if(callMsgFrom == BLE_TO_MCU)
-//						 bleMsg.u.protocal   = REJECT_CALL_IOS_PROTOCAL;
-//						 else
-//						 bleMsg.u.protocal   = REJECT_CALL_PROTOCAL;
-//						 
-//                         bleMsg.id           = BLE_MSG_SEND;
-//						 ble.EventSet(bleMsg);
-//						 multiModule.EventSet(NULL_RED_LED);
-//						 multiModule.EventSet(NULL_GREEN_LED);
-//						 multiModule.EventSet(NULL_MOTO);
-//						 phoneState      = PHONE_STATE_NORMAL;
-//						 dailyMode       = dailyModeBak;
-//						 ModeSwitchToutTimerStop();
-//						 rejectCall = 0;
+
 						 return;				
 					 }
 				 }
@@ -122,9 +97,9 @@ void DailyStepProcess(void)
 				     rejectCall++;
 					 if(rejectCall >= 2)
 					 {	
-						 // DailyTakePhotoEvent();
-						 rejectCall = 0;
-						 return;
+						BlePack(DEVICE_REQ_TAKE_PIC, &bleSendMsg);
+						rejectCall = 0;
+						return;
 					 }
 				 }
 			 }

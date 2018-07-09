@@ -91,7 +91,7 @@ void  M001_AppInit(void)
     bspAccel.BspInterfaceDisable();
 	
 
-	  rtcApp.Init();
+	rtcApp.Init();
     rtcApp.Cb_SecIsrInit(rtcisr);
     rtcApp.Cb_HalfSecIsrInit(rtcNull);
     rtcApp.Cb_MinIsrInit(rtcNull);
@@ -112,7 +112,7 @@ void  M001_AppInit(void)
     keyRegister.HoldKey6sIsrInit_S1(SYS_APP_HANDLE_DAILY, DailyHoldKey6sS1Isr);
     keyRegister.HoldKey6sIsrInit_S2(SYS_APP_HANDLE_DAILY, DailyHoldKey6sS2Isr);
     
-	  ExtflashAppInit();
+	ExtflashAppInit();
 
     //SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 125, 125, 3);
 
