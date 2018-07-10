@@ -326,6 +326,25 @@ void ExtflashAppInit(void)
 
 
 
-
+// extflash
+const extflash_s extflash = 
+{
+	.PowerOn		= ExtflashPowerOn,
+	.PowerOff		= ExtflashPowerOff,
+	.Init			= ExtflashInit,
+	.SelfTest		= ExtflashSelfTest,
+	.WriteSN		= ExtflashWriteSN,
+	.ReadSN			= ExtflashReadSN,
+	.WriteBleMac	= ExtflashWriteBleMac,
+	.ReadBleMac		= ExtflashReadBleMac,
+	.ReadMac		= ExtflashReadMac,
+	.Sleep			= ExtflashSleep,
+	.WakeUp			= ExtflashWakeUp,
+	.Erase_4K		= ExtflashErase_4K,
+	.Write			= ExtflashWrite,
+	.Read			= ExtflashRead,
+	.EventSet		= ExtflashEventSet,
+	.CreateTask		= ExtflashTask_CreateTask,
+};
 
 

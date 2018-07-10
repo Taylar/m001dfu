@@ -415,6 +415,11 @@
               <FileType>1</FileType>
               <FilePath>.\src\osal.c</FilePath>
             </File>
+            <File>
+              <FileName>daily_datasave.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\app\daily_datasave.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -454,6 +459,11 @@
               <FileName>singleportdrive_app.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\module\singleportdrive_app.c</FilePath>
+            </File>
+            <File>
+              <FileName>data_manage_app.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\module\data_manage_app.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -3733,6 +3743,11 @@
               <FileType>1</FileType>
               <FilePath>.\src\osal.c</FilePath>
             </File>
+            <File>
+              <FileName>daily_datasave.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\app\daily_datasave.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -3772,6 +3787,11 @@
               <FileName>singleportdrive_app.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\module\singleportdrive_app.c</FilePath>
+            </File>
+            <File>
+              <FileName>data_manage_app.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\module\data_manage_app.c</FilePath>
             </File>
           </Files>
         </Group>

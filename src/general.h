@@ -32,6 +32,7 @@
 #include "rtc_app.h"
 #include "singleportdrive_app.h"
 #include "extflash_app.h"
+#include "data_manage_app.h"
 // osal
 #include "osal.h"
 
@@ -45,6 +46,7 @@
 #include "daily_sport.h"
 #include "lis3dh.h"
 #include "display.h"
+#include "daily_datasave.h"
 
 
 #include "nrf_log.h"
