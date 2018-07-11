@@ -343,8 +343,6 @@ const extflash_s extflash =
 	.Erase_4K		= ExtflashErase_4K,
 	.Write			= ExtflashWrite,
 	.Read			= ExtflashRead,
-	.EventSet		= ExtflashEventSet,
-	.CreateTask		= ExtflashTask_CreateTask,
 };
 
 

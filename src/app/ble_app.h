@@ -38,6 +38,16 @@ enum
 	APP_FW_UPDATA       = 0X800B,
 };
 
+enum 
+{
+	HDATA_TOTAL_INFO = 0X01,
+	HDATA_CATA_INFO	= 0X02,
+	HDATA_CATA_DATA	= 0X03,
+	HDATA_DEL_ALL	= 0X04,
+	HDATA_DEL_TYPE	= 0X05,
+	HDATA_DEL_CATA	= 0X06,
+};
+
 
 extern protocal_msg_t bleSendMsg;
 extern protocal_msg_t bleRecMsg;

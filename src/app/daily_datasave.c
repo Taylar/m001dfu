@@ -203,18 +203,17 @@ uint16_t DailyDataRequestTotalInfoAck(uint32_t dataClassify)
 	else
 	{
 		// 返回长度与目录数量
-		bleMsg.id			= BLE_MSG_SEND;
-		bleMsg.u.protocal	= PROT_PACK_TRANS_CATA_TOTAL_RET;
-
-		bleMsg.u.protocal.att.load.content.parameter[0]	= (uint8_t)(dataClassify >> 8);
-		bleMsg.u.protocal.att.load.content.parameter[1]	= (uint8_t)(dataClassify);
-		bleMsg.u.protocal.att.load.content.parameter[2]	= (uint8_t)(catalogNum >> 8);
-		bleMsg.u.protocal.att.load.content.parameter[3]	= (uint8_t)(catalogNum);
-		bleMsg.u.protocal.att.load.content.parameter[4]	= (uint8_t)(byteLen >> 24);
-		bleMsg.u.protocal.att.load.content.parameter[5]	= (uint8_t)(byteLen >> 16);
-		bleMsg.u.protocal.att.load.content.parameter[6]	= (uint8_t)(byteLen >> 8);
-		bleMsg.u.protocal.att.load.content.parameter[7]	= (uint8_t)(byteLen);
-		ble.EventSet(bleMsg);
+		bleSendMsg.load[0] = HDATA_TOTAL_INFO;
+		bleSendMsg.load[1] = (uint8_t)(dataClassify >> 8);
+		bleSendMsg.load[2] = (uint8_t)(dataClassify);
+		bleSendMsg.load[3] = (uint8_t)(catalogNum >> 8);
+		bleSendMsg.load[4] = (uint8_t)(catalogNum);
+		bleSendMsg.load[5] = (uint8_t)(byteLen >> 24);
+		bleSendMsg.load[6] = (uint8_t)(byteLen >> 16);
+		bleSendMsg.load[7] = (uint8_t)(byteLen >> 8);
+		bleSendMsg.load[8] = (uint8_t)(byteLen);
+		bleSendMsg.length  = 9;
+		BlePack(DEVICE_HIS_DATA_INFO, &bleSendMsg);
 	}
 	return 0;
 }
@@ -228,7 +227,6 @@ uint16_t DailyDataRequestTotalInfoAck(uint32_t dataClassify)
 uint16_t DailyStepCatalogInfoRead(uint32_t dataClassify, uint16_t catalogNum)
 {
 	uint16_t result;
-	ble_task_msg_t      bleMsg;
 	catalogInfo_s dataInfo;
 
 	result = dataManage.DataCatalogRead(&dataInfo, dataClassify, catalogNum);
@@ -236,19 +234,16 @@ uint16_t DailyStepCatalogInfoRead(uint32_t dataClassify, uint16_t catalogNum)
 	if(result == 0xff)
 		return 0xff;
 	// 返回对应序号目录详细信息
-	bleMsg.id			= BLE_MSG_SEND;
-	bleMsg.u.protocal	= PROT_PACK_TRANS_CATA_RET;
+	bleSendMsg.load[0] = HDATA_CATA_INFO;
+	bleSendMsg.load[1] = (uint8_t)(dataInfo.utc >> 24);
+	bleSendMsg.load[2] = (uint8_t)(dataInfo.utc >> 16);
+	bleSendMsg.load[3] = (uint8_t)(dataInfo.utc >> 8);
+	bleSendMsg.load[4] = (uint8_t)(dataInfo.utc);
+	bleSendMsg.load[5] = (uint8_t)(dataInfo.dataLength >> 8);
+	bleSendMsg.load[6] = (uint8_t)(dataInfo.dataLength);
+	bleSendMsg.length  = 7;
+	BlePack(DEVICE_HIS_DATA_INFO, &bleSendMsg);
 
-	bleMsg.u.protocal.att.load.content.parameter[0]	= (uint8_t)(dataInfo.utc >> 24);
-	bleMsg.u.protocal.att.load.content.parameter[1]	= (uint8_t)(dataInfo.utc >> 16);
-	bleMsg.u.protocal.att.load.content.parameter[2]	= (uint8_t)(dataInfo.utc >> 8);
-	bleMsg.u.protocal.att.load.content.parameter[3]	= (uint8_t)(dataInfo.utc);
-	bleMsg.u.protocal.att.load.content.parameter[4]	= (uint8_t)(dataInfo.dataLength >> 8);
-	bleMsg.u.protocal.att.load.content.parameter[5]	= (uint8_t)(dataInfo.dataLength);
-	bleMsg.u.protocal.att.load.content.parameter[6]	= (uint8_t)((dataInfo.sampleUnit << 4) | (dataInfo.sampleInterval >> 12));
-	bleMsg.u.protocal.att.load.content.parameter[7]	= (uint8_t)(dataInfo.sampleInterval);
-	bleMsg.u.protocal.att.load.content.parameter[8]	= (uint8_t)(dataInfo.unitLength);
-	ble.EventSet(bleMsg);
 	return 0;
 }
 
@@ -268,11 +263,10 @@ uint16_t DailyStepRequestData(uint32_t dataClassify, uint32_t utc, uint16_t pack
 	if(result == 0xff)
 	{
 		// 返回无效数据类型
-		bleMsg.id			= BLE_MSG_SEND;
-		bleMsg.u.protocal	= PROT_PACK_TRANS_DATA_RET;
-
-		bleMsg.u.protocal.att.load.content.parameter[0]	= 1;
-		ble.EventSet(bleMsg);
+		bleSendMsg.load[0] = HDATA_CATA_DATA;
+		bleSendMsg.load[1] = 0x01;
+		bleSendMsg.length  = 2;
+		BlePack(DEVICE_HIS_DATA_INFO, &bleSendMsg);
 		return 0xff;
 	}
 
@@ -285,11 +279,10 @@ uint16_t DailyStepRequestData(uint32_t dataClassify, uint32_t utc, uint16_t pack
 	if(dailyDatauploadTotalLen >= dailyDataUnuploadLen)
 	{
 		// 返回无效数据包序号
-		bleMsg.id			= BLE_MSG_SEND;
-		bleMsg.u.protocal	= PROT_PACK_TRANS_DATA_RET;
-
-		bleMsg.u.protocal.att.load.content.parameter[0]	= 2;
-		ble.EventSet(bleMsg);
+		bleSendMsg.load[0] = HDATA_CATA_DATA;
+		bleSendMsg.load[1] = 0x03;
+		bleSendMsg.length  = 2;
+		BlePack(DEVICE_HIS_DATA_INFO, &bleSendMsg);
 		return 0xff;
 	}
 
@@ -326,11 +319,10 @@ uint16_t DailyStepRequestData(uint32_t dataClassify, uint32_t utc, uint16_t pack
 	if(result == 0xff)
 	{
 		// 返回无效数据包序号
-		bleMsg.id			= BLE_MSG_SEND;
-		bleMsg.u.protocal	= PROT_PACK_TRANS_DATA_RET;
-
-		bleMsg.u.protocal.att.load.content.parameter[0]	= 2;
-		ble.EventSet(bleMsg);
+		bleSendMsg.load[0] = HDATA_CATA_DATA;
+		bleSendMsg.load[1] = 0x03;
+		bleSendMsg.length  = 2;
+		BlePack(DEVICE_HIS_DATA_INFO, &bleSendMsg);
 		return 0xff;
 	}
 
