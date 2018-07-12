@@ -3,47 +3,6 @@
 
 
 
-// 分类数据的目录数量与数据长度返回协议
-static const protocal_msg_t	PROT_PACK_TRANS_CATA_TOTAL_RET =
-{
-	0x23, 0x01, 0x0B, 0x13, 0x00, 0x08, 0xf0, 0x10,
-};
-
-// 分类数据的目录内容返回协议
-static const protocal_msg_t	PROT_PACK_TRANS_CATA_RET =
-{
-	0x23, 0x01, 0x0c, 0x13, 0x00, 0x08, 0xf0, 0x11,
-};
-
-// 分类数据的数据包请求结果反馈
-static const protocal_msg_t	PROT_PACK_TRANS_DATA_RET =
-{
-	0x23, 0x01, 0x04, 0x13, 0x00, 0x08, 0xf0, 0x12,
-};
-
-// 删除所有数据反馈
-static const protocal_msg_t	PROT_PACK_TRANS_DELETE_ALL_RET =
-{
-	0x23, 0x01, 0x04, 0x13, 0x00, 0x80, 0xf0, 0x30,
-};
-
-// 删除某类数据反馈
-static const protocal_msg_t	PROT_PACK_TRANS_DELETE_CLASS_RET =
-{
-	0x23, 0x01, 0x06, 0x13, 0x00, 0x80, 0xf0, 0x31,
-};
-
-// 删除目录反馈
-static const protocal_msg_t	PROT_PACK_TRANS_DELETE_CATALOG_RET =
-{
-	0x23, 0x01, 0x0a, 0x13, 0x00, 0x80, 0xf0, 0x32,
-};
-
-// 数据包上传协议
-static const protocal_msg_t	PROT_PACK_TRANS_DATA_UPLOAD =
-{
-	0x23, 0x01, 0x18, 0x12, 0x80, 0x01, 0xf0, 0x01,
-};
 
 #define			DAILY_STEP_NULLPACKET_MAX		12
 #define			DAILY_STEP_PACKET_MAX			8
@@ -66,6 +25,9 @@ static uint16_t dailyDataCurUploadPackNum;		//当前上传的数据包序号
 
 static uint16_t dailyDataCurUploadClassify;		//当前上传的数据分类
 static uint16_t dailyDataCurCatalogUtc;			//当前上传的目录UTC
+
+uint8_t			dataUploadFlag;
+
 
 enum
 {
@@ -91,17 +53,22 @@ void DailyDataSaveInit(void)
 	dataManage.Init();
 	dataManage.DataInit(STEPDATA_CLASSIFY, 2*DM_APP_SECTOR_LENGTH, 5*DM_APP_SECTOR_LENGTH);
 
+
+
 	ClearStepTemp();
 	dailyStepNullpacketCnt		= 0;
 	dailySteppacketCnt			= 0;
 	dailyStepSaveState			= DATA_SAVE_IDLE;
+	dataUploadFlag				= DATA_UNUPLOADING;
+
+	dataManage.StorageDataRecover();
 }
 
 // 函数功能:	每整5分钟调用一次，自动判定是否需要存储
-// 输入参数：	utc:	该5分钟数据的UTC时间
-// 				step:	该5分钟内的计步数据。连续1小时（12小包）没有数据时不会进行存储。
+// 输入参数：	utc:	开始的UTC时间
+// 				step:	该时间段内的计步数据。连续1小时（12小包）没有数据时不会进行存储。
 // 返回参数：	无
-void DailyStep5MinSave(uint32_t utc, uint16_t step)
+void DailyStepSave(uint32_t utc, uint16_t step)
 {
 	catalogInfo_s		catalogInfoTemp;
 
@@ -256,7 +223,7 @@ uint16_t DailyStepRequestData(uint32_t dataClassify, uint32_t utc, uint16_t pack
 {
 	uint32_t lengthTemp;
 	uint16_t result;
-	ble_task_msg_t      bleMsg;
+
 
 	result = dataManage.CatalogLenRead(&dailyDataUnuploadLen, utc, dataClassify);
 
@@ -286,12 +253,11 @@ uint16_t DailyStepRequestData(uint32_t dataClassify, uint32_t utc, uint16_t pack
 		return 0xff;
 	}
 
-	bleMsg.id			= BLE_MSG_SEND;
-	bleMsg.u.protocal	= PROT_PACK_TRANS_DATA_RET;
-
-	bleMsg.u.protocal.att.load.content.parameter[0]	= 0;
-	ble.EventSet(bleMsg);
-
+	bleSendMsg.load[0] = HDATA_CATA_DATA;
+	bleSendMsg.load[1] = 0;
+	bleSendMsg.length  = 2;
+	BlePack(DEVICE_HIS_DATA_INFO, &bleSendMsg);
+	
 
 	dailyDataUnuploadLen	= dailyDataUnuploadLen - dailyDatauploadTotalLen;
 
@@ -304,15 +270,15 @@ uint16_t DailyStepRequestData(uint32_t dataClassify, uint32_t utc, uint16_t pack
 		lengthTemp	= DAILY_DATA_UPLOAD_MAX_LEN;
 	}
 
-	bleMsg.id			= BLE_MSG_SEND;
-	bleMsg.u.protocal	= PROT_PACK_TRANS_DATA_UPLOAD;
+	//bleSendMsg.load[0] = HDATA_CATA_INFO;
+	bleSendMsg.load[0] = (uint8_t)(dailyDataCurUploadPackNum >> 8);
+	bleSendMsg.load[1] = (uint8_t)(dailyDataCurUploadPackNum);
+	bleSendMsg.load[2] = (uint8_t)(dailyDataCurUploadClassify >> 8);
+	bleSendMsg.load[3] = (uint8_t)(dailyDataCurUploadClassify);
+	bleSendMsg.length  = 20;
+	
 
-	bleMsg.u.protocal.att.load.content.parameter[0]	= (uint8_t)(dailyDataCurUploadPackNum >> 8);
-	bleMsg.u.protocal.att.load.content.parameter[1]	= (uint8_t)(dailyDataCurUploadPackNum);
-	bleMsg.u.protocal.att.load.content.parameter[2]	= (uint8_t)(dailyDataCurUploadClassify >> 8);
-	bleMsg.u.protocal.att.load.content.parameter[3]	= (uint8_t)(dailyDataCurUploadClassify);
-
-	result = dataManage.DataRead((bleMsg.u.protocal.att.load.content.parameter + 4), 
+	result = dataManage.DataRead((bleSendMsg.load + 4), 
 								dailyDatauploadTotalLen, lengthTemp, dailyDataCurCatalogUtc, dailyDataCurUploadClassify);
 
 	// 无效数据
@@ -327,11 +293,13 @@ uint16_t DailyStepRequestData(uint32_t dataClassify, uint32_t utc, uint16_t pack
 	}
 
 	// 发送数据
-	ble.EventSet(bleMsg);
+	Ble_ldtHandleSend(bleSendMsg.load, 20);
 
 	dailyDataCurUploadPackNum++;
 	dailyDatauploadTotalLen += lengthTemp;
 	dailyDataUnuploadLen	-= lengthTemp;
+
+	dataUploadFlag = DATA_UPLOADING;
 
 	return 0x00;
 }
@@ -344,12 +312,18 @@ uint16_t DailyStepRequestData(uint32_t dataClassify, uint32_t utc, uint16_t pack
 uint16_t DailyDataUploadProcess(void)
 {
 	uint16_t result;
-	ble_task_msg_t      bleMsg;
+
 	uint32_t lengthTemp;
+
+	if(dataUploadFlag == DATA_UNUPLOADING)
+		return 0x00;
 
 	// 数据上传完毕
 	if(dailyDataUnuploadLen == 0)
+	{
+		dataUploadFlag = DATA_UNUPLOADING;
 		return 0;
+	}
 
 	if(dailyDataUnuploadLen < DAILY_DATA_UPLOAD_MAX_LEN)
 	{
@@ -360,31 +334,28 @@ uint16_t DailyDataUploadProcess(void)
 		lengthTemp	= DAILY_DATA_UPLOAD_MAX_LEN;
 	}
 
-	bleMsg.id			= BLE_MSG_SEND;
-	bleMsg.u.protocal	= PROT_PACK_TRANS_DATA_UPLOAD;
+	bleSendMsg.load[0] = (uint8_t)(dailyDataCurUploadPackNum >> 8);
+	bleSendMsg.load[1] = (uint8_t)(dailyDataCurUploadPackNum);
+	bleSendMsg.load[2] = (uint8_t)(dailyDataCurUploadClassify >> 8);
+	bleSendMsg.load[3] = (uint8_t)(dailyDataCurUploadClassify);
+	bleSendMsg.length  = 20;
 
-	bleMsg.u.protocal.att.load.content.parameter[0]	= (uint8_t)(dailyDataCurUploadPackNum >> 8);
-	bleMsg.u.protocal.att.load.content.parameter[1]	= (uint8_t)(dailyDataCurUploadPackNum);
-	bleMsg.u.protocal.att.load.content.parameter[2]	= (uint8_t)(dailyDataCurUploadClassify >> 8);
-	bleMsg.u.protocal.att.load.content.parameter[3]	= (uint8_t)(dailyDataCurUploadClassify);
-
-	result = dataManage.DataRead((bleMsg.u.protocal.att.load.content.parameter + 4), 
+	result = dataManage.DataRead((bleSendMsg.load + 4), 
 								dailyDatauploadTotalLen, lengthTemp, dailyDataCurCatalogUtc, dailyDataCurUploadClassify);
 
 	// 无效数据
 	if(result == 0xff)
 	{
 		// 返回无效数据包序号
-		bleMsg.id			= BLE_MSG_SEND;
-		bleMsg.u.protocal	= PROT_PACK_TRANS_DATA_RET;
-
-		bleMsg.u.protocal.att.load.content.parameter[0]	= 2;
-		ble.EventSet(bleMsg);
+		bleSendMsg.load[0] = HDATA_CATA_DATA;
+		bleSendMsg.load[1] = 0x03;
+		bleSendMsg.length  = 2;
+		BlePack(DEVICE_HIS_DATA_INFO, &bleSendMsg);
 		return 0xff;
 	}
 
 	// 发送数据
-	ble.EventSet(bleMsg);
+	Ble_ldtHandleSend(bleSendMsg.load, 20);
 
 	dailyDataCurUploadPackNum++;
 	dailyDatauploadTotalLen += lengthTemp;
@@ -400,21 +371,22 @@ uint16_t DailyDataUploadProcess(void)
 uint16_t DailyDataTotalDelete(void)
 {
 	uint16_t result;
-	ble_task_msg_t      bleMsg;
+	
 
 	result = dataManage.DeleteTotalData();
 
-	bleMsg.id			= BLE_MSG_SEND;
-	bleMsg.u.protocal	= PROT_PACK_TRANS_DELETE_ALL_RET;
+	bleSendMsg.load[0] = HDATA_DEL_ALL;
+	bleSendMsg.length  = 2;
+	
 	if(result == 0)
 	{
-		bleMsg.u.protocal.att.load.content.parameter[0]	= 0;
+			bleSendMsg.load[1] = 0;
 	}
 	else
 	{
-		bleMsg.u.protocal.att.load.content.parameter[0]	= 1;
+		bleSendMsg.load[1] = 1;
 	}
-	ble.EventSet(bleMsg);
+	BlePack(DEVICE_HIS_DATA_INFO, &bleSendMsg);
 	
 	return result;
 }
@@ -427,24 +399,27 @@ uint16_t DailyDataTotalDelete(void)
 uint16_t DailyDataDeleteClassify(uint32_t dataClassify)
 {
 	uint16_t result;
-	ble_task_msg_t      bleMsg;
+
 
 	result = dataManage.DeleteClassifyData(dataClassify);
 
-	bleMsg.id			= BLE_MSG_SEND;
-	bleMsg.u.protocal	= PROT_PACK_TRANS_DELETE_CLASS_RET;
-	bleMsg.u.protocal.att.load.content.parameter[0]	= (uint8_t)(dataClassify >> 8);
-	bleMsg.u.protocal.att.load.content.parameter[1]	= (uint8_t)(dataClassify);
+	
+	bleSendMsg.load[0] = HDATA_DEL_TYPE;
+	bleSendMsg.load[1] = (uint8_t)(dataClassify >> 8);
+	bleSendMsg.load[2] = (uint8_t)(dataClassify);
+	
+	bleSendMsg.length  = 4;
+
 
 	if(result == 0)
 	{
-		bleMsg.u.protocal.att.load.content.parameter[2]	= 0;
+		bleSendMsg.load[3] = 0;
 	}
 	else
 	{
-		bleMsg.u.protocal.att.load.content.parameter[2]	= 1;
+		bleSendMsg.load[3] = 1;
 	}
-	ble.EventSet(bleMsg);
+	BlePack(DEVICE_HIS_DATA_INFO, &bleSendMsg);
 	return result;
 }
 
@@ -456,28 +431,28 @@ uint16_t DailyDataDeleteClassify(uint32_t dataClassify)
 uint16_t DailyDataDeleteCatalog(uint32_t dataClassify, uint32_t utc)
 {
 	uint16_t result;
-	ble_task_msg_t      bleMsg;
 
 	result = dataManage.DeleteClassifyDataUtc(dataClassify, utc);
 
-	bleMsg.id			= BLE_MSG_SEND;
-	bleMsg.u.protocal	= PROT_PACK_TRANS_DELETE_CATALOG_RET;
-	bleMsg.u.protocal.att.load.content.parameter[0]	= (uint8_t)(dataClassify >> 8);
-	bleMsg.u.protocal.att.load.content.parameter[1]	= (uint8_t)(dataClassify);
-	bleMsg.u.protocal.att.load.content.parameter[2]	= (uint8_t)(utc >> 24);
-	bleMsg.u.protocal.att.load.content.parameter[3]	= (uint8_t)(utc >> 16);
-	bleMsg.u.protocal.att.load.content.parameter[4]	= (uint8_t)(utc >> 8);
-	bleMsg.u.protocal.att.load.content.parameter[5]	= (uint8_t)(utc);
+	bleSendMsg.load[0] = HDATA_DEL_TYPE;
+	bleSendMsg.load[1] = (uint8_t)(dataClassify >> 8);
+	bleSendMsg.load[2] = (uint8_t)(dataClassify);
+	bleSendMsg.load[3] = (uint8_t)(utc >> 24);
+	bleSendMsg.load[4] = (uint8_t)(utc >> 16);
+	bleSendMsg.load[5] = (uint8_t)(utc >> 8);
+	bleSendMsg.load[6] = (uint8_t)(utc);
+	bleSendMsg.length  = 8;
+	
 
 	if(result == 0)
 	{
-		bleMsg.u.protocal.att.load.content.parameter[6]	= 0;
+		bleSendMsg.load[6]	= 0;
 	}
 	else
 	{
-		bleMsg.u.protocal.att.load.content.parameter[6]	= 1;
+		bleSendMsg.load[6]	= 1;
 	}
-	ble.EventSet(bleMsg);
+	BlePack(DEVICE_HIS_DATA_INFO, &bleSendMsg);
 
 	return result;
 }

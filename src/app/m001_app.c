@@ -20,6 +20,12 @@ void rtcisr(void)
 {
     SetRtcEvent();
 }
+
+void Hourisr(void)
+{
+    SetKeyEvent(DAILYAPP_MSG_HOUR_ISR);
+}
+
 void rtcNull(void)
 {
 
@@ -88,13 +94,14 @@ void  M001_AppInit(void)
 
 	bspAccel.BspInterfaceEnable();
 	bspAccel.Sleep();
-    bspAccel.BspInterfaceDisable();
+  bspAccel.BspInterfaceDisable();
 	
 
 	rtcApp.Init();
     rtcApp.Cb_SecIsrInit(rtcisr);
     rtcApp.Cb_HalfSecIsrInit(rtcNull);
     rtcApp.Cb_MinIsrInit(rtcNull);
+    rtcApp.Cb_HourIsrInit(rtcNull);
     rtcApp.Cb_DayIsrInit(rtcNull);
 
 	
@@ -114,6 +121,10 @@ void  M001_AppInit(void)
     
 	ExtflashAppInit();
 
+	// data init
+	DailyDataSaveInit();
+	DailySportInit();
+	
     //SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 125, 125, 3);
 
 }
@@ -276,6 +287,15 @@ void M001_KeyApp(uint32_t keyEvent)
 	{
 
 	}
+
+	if(DAILYAPP_MSG_HOUR_ISR & keyEvent)
+	{
+
+		DailyStepSave((rtcApp.Read_Cur_Utc()/3600-1)*3600, DailyStepSaveRead());
+		DailyStepSaveClear();
+
+	}
+
 
 
 }

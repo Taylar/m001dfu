@@ -1,6 +1,7 @@
 #include "general.h"
 
 uint32_t dailyTotalStep;
+uint32_t dailyStepSave;
 uint32_t dailyStepAim;
 uint16_t dailyStepComplete;
 
@@ -16,10 +17,21 @@ static uint8_t  rejectCall;
 void DailySportInit(void)
 {
     dailyTotalStep          = 0;
+    dailyStepSave           = 0;
     dailyStepComplete       = 0;
     dailyStepAim            = 10000;
 }
 
+
+uint32_t DailyStepSaveRead(void)
+{
+	return dailyStepSave;
+}
+
+void DailyStepSaveClear(void)
+{
+	dailyStepSave = 0;
+}
 
 
 void DailyStepProcess(void)
@@ -50,6 +62,7 @@ void DailyStepProcess(void)
             if(temp == 1 || temp == 12)
             {
                 dailyTotalStep      += temp;
+                dailyStepSave 		+= temp;
 
                 dailyStepComplete   = (uint16_t)(dailyTotalStep * 100 / dailyStepAim);
                 if(dailyStepComplete > 100)

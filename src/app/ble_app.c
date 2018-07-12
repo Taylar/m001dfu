@@ -276,6 +276,39 @@ void BleProtocal(protocal_msg_t *msg)
 
 
 		case APP_REQ_HIS_DATA:
+		switch(msg->load[0])
+		{
+			case HDATA_TOTAL_INFO:
+			DailyDataRequestTotalInfoAck(((uint32_t)(msg->load[2]) << 8) + msg->load[3]);
+			break;
+
+			case HDATA_CATA_INFO:
+			 DailyStepCatalogInfoRead(((uint32_t)(msg->load[1]) << 8) + msg->load[2],
+                                        ((uint32_t)(msg->load[3]) << 8) + msg->load[4]);
+			break;
+
+			case HDATA_CATA_DATA:
+			DailyStepRequestData(((uint32_t)(msg->load[1]) << 8) + msg->load[2],
+                                    ((uint32_t)(msg->load[3]) << 24) + ((uint32_t)(msg->load[4]) << 16) +
+                                    ((uint32_t)(msg->load[5]) << 8) + msg->load[6],
+                                    ((uint32_t)(msg->load[7]) << 8) + msg->load[8]);
+			break;
+
+			case HDATA_DEL_ALL:
+			DailyDataTotalDelete();
+			break;
+
+			case HDATA_DEL_TYPE:
+			DailyDataDeleteClassify(((uint32_t)(msg->load[1]) << 8) + msg->load[2]);
+			break;
+
+			case HDATA_DEL_CATA:
+			DailyDataDeleteCatalog(((uint32_t)(msg->load[1]) << 8) + msg->load[2],
+                                    ((uint32_t)(msg->load[3]) << 24) + ((uint32_t)(msg->load[4]) << 16)+
+                                    ((uint32_t)(msg->load[5]) << 8) + msg->load[6]);
+			break;
+
+		}
 		break;
 
 
@@ -330,6 +363,12 @@ void BleApp(uint32_t event)
 	{
 
 	}
+
+	if(BLE_SEND_FINISH & event)
+	{
+		DailyDataUploadProcess();
+	}
+
 
 
 

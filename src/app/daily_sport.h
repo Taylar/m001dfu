@@ -14,6 +14,9 @@ void DailyStepProcess(void);
 
 void DailySportInit(void);
 
+uint32_t DailyStepSaveRead(void);
+
+void DailyStepSaveClear(void);
 //void DailyActionReconProcess(void);
 
 //void ClearBuf(void);

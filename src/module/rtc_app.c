@@ -4,6 +4,7 @@
 func *RtcHalfSecIsr;
 func *RtcSecIsr;
 func *RtcMinIsr;
+func *RtcHourIsr;
 func *RtcDayIsr;
 
 
@@ -91,12 +92,15 @@ static const uint32_t Table_YearFirstDayUTC[101] =
 	RtcMinIsr		= Cb;
 }
 
- void RtcDayCbInit(func *Cb)
+ void RtcHourCbInit(func *Cb)
+{
+	RtcHourIsr		= Cb;
+}
+
+void RtcDayCbInit(func *Cb)
 {
 	RtcDayIsr		= Cb;
 }
-
-
 //static uint8_t	HalfSecCnt = 0;
 //static uint8_t	SecCnt     = 0;
 
@@ -271,6 +275,7 @@ uint8_t MonthDay(uint16_t year_1, uint8_t month_1)
 				rtcTime.week = AutoWeek(rtcTime.year, rtcTime.month, rtcTime.day);
 			}
 //every Hour
+			RtcHourIsr();
 		}
 //every min
 	}
@@ -536,6 +541,7 @@ const rtc_s rtcApp =
 	.Cb_HalfSecIsrInit	= RtcHalfSecCbInit,
 	.Cb_SecIsrInit		= RtcSecCbInit,
 	.Cb_MinIsrInit		= RtcMinCbInit,
+	.Cb_HourIsrInit		= RtcHourCbInit,
 	.Cb_DayIsrInit		= RtcDayCbInit,
 	.TimeTransformUtc	= TimeTransformUtc,
 	.UtcTransformTime	= UtcTransformTime,

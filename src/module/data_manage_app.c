@@ -1147,6 +1147,11 @@ uint16_t StorageDataRecover(void)
 						earlyCatalogAddr	= addrTemp;
 					}
 				}
+				else
+				{
+					// 数据类型不同，无需继续查找
+					break;
+				}
 			}
 
 			if(lastCatalog.utc == 0)

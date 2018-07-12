@@ -57,6 +57,7 @@ typedef struct
 	void		(*Cb_HalfSecIsrInit)(func *Cb);
 	void		(*Cb_SecIsrInit)(func *Cb);
 	void		(*Cb_MinIsrInit)(func *Cb);
+	void		(*Cb_HourIsrInit)(func *Cb);
 	void		(*Cb_DayIsrInit)(func *Cb);
 	uint16_t	(*TimeTransformUtc)(rtc_time_s *timeTemp, uint32_t *utcTemp);
 	uint16_t	(*UtcTransformTime)(uint32_t utcTemp, rtc_time_s *timeTemp);
