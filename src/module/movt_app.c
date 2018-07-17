@@ -66,7 +66,9 @@ void MovtEventSet(movt_task_msg_t msg)
 		if(bsp_movt.clockM->aimPosition >= bsp_movt.clockM->movtRangeMax)
 			bsp_movt.clockM->aimPosition 	= 0;
 
+		// bsp_movt.clockM->directionSet		= MOVT_DIR_SETTING;
 		bsp_movt.clockM->directionSet		= MOVT_DIR_AUTO;
+		bsp_movt.clockM->tempDirection		= MOVT_DIR_FORWARD;
 		bsp_movt.clockM->repeat				= 0;
 //                bsp_movt.clockM->stop               = 0;
 		bsp_movt.Compare(bsp_movt.clockM);

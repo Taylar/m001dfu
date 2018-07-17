@@ -102,7 +102,7 @@ void DailyStepProcess(void)
 				 }
 			 }
 
-			 // if(phoneState == PHONE_STATE_TAKE_PICTURE)
+			 if(phoneState == PHONE_STATE_TAKE_PICTURE)
 			 {
 			     temp2 = actionRecongnition(G_sensorBuf + i*3);
 				 if(temp2 == 1)

@@ -152,6 +152,8 @@ static ble_uuid_t m_adv_uuids[]          =                                      
     {BLE_UUID_NUS_SERVICE, NUS_SERVICE_UUID_TYPE}
 };
 
+ble_gap_addr_t bleMac;
+
 /**@brief Handler for shutdown preparation.
  *
  * @details During shutdown procedures, this function will be called at a 1 second interval
@@ -1173,6 +1175,11 @@ void Ble_ldtHandleSend(uint8_t *data, uint16_t length)
     ble_nus_data_send(&m_nus, data, &length, m_conn_handle, m_nus.rx_handles.value_handle);
 }
 
+void BleMacRead(uint8_t *addr)
+{
+    memcpy(addr, bleMac.addr, 6);
+}
+
 /**@brief Application main function.
  */
 int main(void)
@@ -1203,7 +1210,8 @@ int main(void)
 		APP_ERROR_CHECK(err_code);
     conn_params_init();
     peer_manager_init();
-        
+    
+    sd_ble_gap_addr_get(&bleMac);
 
     // Start execution.
 #ifdef      SUPPORT_UART_PRINTF

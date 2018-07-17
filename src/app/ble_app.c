@@ -107,6 +107,14 @@ void BlePack(uint32_t command, protocal_msg_t *msg)
 		}
 		break;
 
+		case DEVICE_REPLY_BLE:
+		if(msg->load[0] == 0x01)
+		{
+			BleMacRead(msg->load+1);
+			msg->length = 7;
+		}
+		break;
+
 		default:
 		return;
 	}
@@ -321,6 +329,11 @@ void BleProtocal(protocal_msg_t *msg)
 		case APP_REQ_PEER:
 		RequestPeer();
 		break;
+
+		case APP_REQ_BLE_INFO:
+	    BlePack(DEVICE_REPLY_BLE, msg);
+		break;
+
 
         default:
         break;

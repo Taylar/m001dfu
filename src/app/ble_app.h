@@ -24,6 +24,7 @@ enum
 	DEVICE_UPDATA_COMMAND = 0x0007,
 	DEVICE_REQ_TAKE_PIC   = 0x0008,
 	DEVICE_SPORT_AIM      = 0x0009,
+	DEVICE_REPLY_BLE      = 0x000A,
 
 	APP_COM_ACK         = 0X8001,
 	APP_REPLY_RTC       = 0X8002,
@@ -37,6 +38,7 @@ enum
 	APP_REQ_HIS_DATA    = 0X800A,
 	APP_FW_UPDATA       = 0X800B,
 	APP_REQ_PEER        = 0X800C,
+	APP_REQ_BLE_INFO    = 0X800D,
 };
 
 enum 
@@ -54,6 +56,8 @@ extern uint8_t modifyBleNameFlah;
 
 extern protocal_msg_t bleSendMsg;
 extern protocal_msg_t bleRecMsg;
+
+void BleMacRead(uint8_t *addr);
 
 void ModifyBleName(void);
 

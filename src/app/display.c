@@ -12,7 +12,7 @@ void DisplaySportComplete(uint16_t percent)
 
 	if(COMPLETE_START_POS > COMPLETE_END_POS)
 	{
-		pinPos = ((uint16_t)(COMPLETE_START_POS - COMPLETE_END_POS) * (uint16_t) percent / 100) + COMPLETE_END_POS;
+		pinPos = COMPLETE_START_POS - ((uint16_t)(COMPLETE_START_POS - COMPLETE_END_POS) * (uint16_t) percent / 100);
 	}
 	else
 	{
