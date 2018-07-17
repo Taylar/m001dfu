@@ -10,7 +10,7 @@ typedef struct
 	uint8_t serialNum;
 	uint8_t length;
 	uint8_t id[2];
-	uint8_t load[256];
+	uint8_t load[20];
 }__attribute__((packed)) protocal_msg_t;
 
 enum 
@@ -36,6 +36,7 @@ enum
 	APP_SET_BRO_NAME    = 0X8009,
 	APP_REQ_HIS_DATA    = 0X800A,
 	APP_FW_UPDATA       = 0X800B,
+	APP_REQ_PEER        = 0X800C,
 };
 
 enum 
@@ -49,10 +50,16 @@ enum
 };
 
 
+extern uint8_t modifyBleNameFlah;
+
 extern protocal_msg_t bleSendMsg;
 extern protocal_msg_t bleRecMsg;
 
+void ModifyBleName(void);
 
+void advertising_init(void);
+
+void RequestPeer(void);
 
 void advertising_start(bool erase_bonds);
 

@@ -26,7 +26,7 @@
 // 数据分类
 typedef enum
 {
-	STEPDATA_CLASSIFY		= 0x01,
+	STEPDATA_CLASSIFY		= 0x00,
 	SLEEPDATA_CLASSIFY,
 } data_classify_e;
 

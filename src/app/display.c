@@ -1,7 +1,7 @@
 #include "general.h"
 
-#define COMPLETE_START_POS		38
-#define COMPLETE_END_POS		23
+#define COMPLETE_START_POS		40
+#define COMPLETE_END_POS		20
 
 
 void DisplaySportComplete(uint16_t percent)
@@ -33,7 +33,7 @@ void DisplaySportComplete(uint16_t percent)
 
 
 	msg.aim 		= curPosision;
-    msg.id          = MOVT_MSG_MC_SET_AIM;
+    msg.id          = MOVT_MSG_MC_SET_AIM_FORWARD;
     MovtEventSet(msg);
 
 }

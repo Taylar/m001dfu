@@ -134,8 +134,8 @@ static rtc_time_s		rtcTime;
 	bspRtc.BspInit();
 	bspRtc.CbIsrInit(RtcIsr);
 //	HalfSecCnt		= 1;
-	rtcTime.year  	= 0;
-	rtcTime.month	= 1;
+	rtcTime.year  	= 18;
+	rtcTime.month	= 7;
 	rtcTime.day		= 1;
 	rtcTime.hour    = 0;
 	rtcTime.min		= 0;
@@ -245,7 +245,6 @@ uint8_t MonthDay(uint16_t year_1, uint8_t month_1)
 	{
 		rtcTime.min ++;
 		rtcTime.sec = 0;
-		RtcMinIsr();
 		if(rtcTime.min > 59)
 		{
 			rtcTime.min = 0;
@@ -278,6 +277,7 @@ uint8_t MonthDay(uint16_t year_1, uint8_t month_1)
 			RtcHourIsr();
 		}
 //every min
+		RtcMinIsr();
 	}
 }
 

@@ -113,7 +113,7 @@ static uint16_t     m_cur_conn_handle = BLE_CONN_HANDLE_INVALID;                
 
 #define APP_BLE_CONN_CFG_TAG            1                                           /**< A tag identifying the SoftDevice BLE configuration. */
 
-char m001BraodcastName[16] = "M001A_V04";
+char m001BraodcastName[16] = "M001A";
 
 #define DEVICE_NAME                     m001BraodcastName                               /**< Name of device. Will be included in the advertising data. */
 #define NUS_SERVICE_UUID_TYPE           BLE_UUID_TYPE_VENDOR_BEGIN                  /**< UUID type for the Nordic UART Service (vendor specific). */
@@ -124,9 +124,9 @@ char m001BraodcastName[16] = "M001A_V04";
 
 #define APP_ADV_DURATION                0                                       /**< The advertising duration (180 seconds) in units of 10 milliseconds. */
 
-#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(20, UNIT_1_25_MS)             /**< Minimum acceptable connection interval (20 ms), Connection interval uses 1.25 ms units. */
-#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(75, UNIT_1_25_MS)             /**< Maximum acceptable connection interval (75 ms), Connection interval uses 1.25 ms units. */
-#define SLAVE_LATENCY                   0                                           /**< Slave latency. */
+#define MIN_CONN_INTERVAL               MSEC_TO_UNITS(100, UNIT_1_25_MS)             /**< Minimum acceptable connection interval (20 ms), Connection interval uses 1.25 ms units. */
+#define MAX_CONN_INTERVAL               MSEC_TO_UNITS(125, UNIT_1_25_MS)             /**< Maximum acceptable connection interval (75 ms), Connection interval uses 1.25 ms units. */
+#define SLAVE_LATENCY                   4                                           /**< Slave latency. */
 #define CONN_SUP_TIMEOUT                MSEC_TO_UNITS(4000, UNIT_10_MS)             /**< Connection supervisory timeout (4 seconds), Supervision Timeout uses 10 ms units. */
 #define FIRST_CONN_PARAMS_UPDATE_DELAY  APP_TIMER_TICKS(5000)                       /**< Time from initiating event (connect or start of notification) to first time sd_ble_gap_conn_param_update is called (5 seconds). */
 #define NEXT_CONN_PARAMS_UPDATE_DELAY   APP_TIMER_TICKS(30000)                      /**< Time between each call to sd_ble_gap_conn_param_update after the first call (30 seconds). */
@@ -285,6 +285,13 @@ static void peer_list_get(pm_peer_id_t * p_peers, uint32_t * p_size)
         p_peers[(*p_size)++] = peer_id;
         peer_id = pm_next_peer_id_get(peer_id);
     }
+}
+
+void RequestPeer(void)
+{
+    uint32_t   err_code;
+    err_code = app_timer_start(m_sec_req_timer_id, SECURITY_REQUEST_DELAY, NULL);
+    APP_ERROR_CHECK(err_code);
 }
 
 
@@ -774,6 +781,8 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             NRF_LOG_INFO("Connected");
             SetBleEvent(BLE_CONNECT_EVENT);
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
+				    err_code=sd_ble_gap_tx_power_set(BLE_GAP_TX_POWER_ROLE_CONN,m_conn_handle,+4);
+            APP_ERROR_CHECK(err_code);
             err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
             APP_ERROR_CHECK(err_code);
                         
@@ -1035,7 +1044,7 @@ static void uart_init(void)
 
 /**@brief Function for initializing the Advertising functionality.
  */
-static void advertising_init(void)
+void advertising_init(void)
 {
     uint32_t               err_code;
     ble_advertising_init_t init;
@@ -1058,6 +1067,22 @@ static void advertising_init(void)
     APP_ERROR_CHECK(err_code);
 
     ble_advertising_conn_cfg_tag_set(&m_advertising, APP_BLE_CONN_CFG_TAG);
+}
+
+void ModifyBleName(void)
+{
+    uint32_t               err_code;
+    ble_gap_conn_sec_mode_t sec_mode;
+
+    sd_ble_gap_adv_stop(m_advertising.adv_handle);
+	
+    BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
+
+    err_code = sd_ble_gap_device_name_set(&sec_mode,
+                                          (const uint8_t *) DEVICE_NAME,
+                                          strlen(DEVICE_NAME));
+    advertising_init();
+    advertising_start(false);
 }
 
 
@@ -1123,7 +1148,8 @@ static void idle_state_handle(void)
  */
 void advertising_stop(void)
 {
-    uint32_t err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_IDLE);
+    // uint32_t err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_IDLE);
+    uint32_t err_code = sd_ble_gap_adv_stop(m_advertising.adv_handle);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -1143,6 +1169,7 @@ void Ble_CommandHandleSend(uint8_t *data, uint16_t length)
 
 void Ble_ldtHandleSend(uint8_t *data, uint16_t length)
 {
+    NRF_LOG_INFO("data:%s\n", HexToSprintf((uint8_t*)data, length));          
     ble_nus_data_send(&m_nus, data, &length, m_conn_handle, m_nus.rx_handles.value_handle);
 }
 
@@ -1150,7 +1177,7 @@ void Ble_ldtHandleSend(uint8_t *data, uint16_t length)
  */
 int main(void)
 {
-
+    uint32_t err_code;
     
     // Initialize.
 #ifdef      SUPPORT_UART_PRINTF
@@ -1172,6 +1199,8 @@ int main(void)
     gatt_init();
     services_init();
     advertising_init();
+    err_code=sd_ble_gap_tx_power_set(BLE_GAP_TX_POWER_ROLE_ADV,m_advertising.adv_handle,+4);
+		APP_ERROR_CHECK(err_code);
     conn_params_init();
     peer_manager_init();
         

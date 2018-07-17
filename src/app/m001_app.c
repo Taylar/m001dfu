@@ -78,6 +78,7 @@ void DailyHoldKey6sS2Isr(void)
 
 
 
+extern void DataManageTest(void);
 
 void  M001_AppInit(void)
 {
@@ -101,7 +102,7 @@ void  M001_AppInit(void)
     rtcApp.Cb_SecIsrInit(rtcisr);
     rtcApp.Cb_HalfSecIsrInit(rtcNull);
     rtcApp.Cb_MinIsrInit(rtcNull);
-    rtcApp.Cb_HourIsrInit(rtcNull);
+    rtcApp.Cb_HourIsrInit(Hourisr);
     rtcApp.Cb_DayIsrInit(rtcNull);
 
 	
@@ -122,9 +123,11 @@ void  M001_AppInit(void)
 	ExtflashAppInit();
 
 	// data init
+	modifyBleNameFlah = false;
+
 	DailyDataSaveInit();
 	DailySportInit();
-	
+	// DataManageTest();
     //SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 125, 125, 3);
 
 }
@@ -186,8 +189,8 @@ void M001_3Hlongkey(void)
 	{
 		if(batState == BAT_FULL_STATE)
 		{
-			SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 130, 370, 4);
-			SetSinglePort(MOTO, MOTO_PORT_ACTIVE_STATE, 130, 130, 1);
+			SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 125, 125, 8);
+			// SetSinglePort(MOTO, MOTO_PORT_ACTIVE_STATE, 130, 130, 1);
 
 			bleMode       = BLE_BROADCAST_MODE;
 			sysMode       = SYS_WORK_MODE;
@@ -199,15 +202,16 @@ void M001_3Hlongkey(void)
 			accel.bsp->BspInterfaceEnable();
 			bspAccel.SampleSet();
 			accel.bsp->BspInterfaceDisable();
-			advertising_start(true);
+			advertising_start(false);
 		}
 	}
 	else if(sysMode == SYS_WORK_MODE)
 	{
 		if(bleMode == BLE_SLEEP_MODE)
 		{
-			 SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 130, 370, 4);
-			 bleMode = BLE_BROADCAST_MODE;
+			SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 125, 125, 8);
+			bleMode = BLE_BROADCAST_MODE;
+			advertising_start(false);
 		}
 		else
 		{
@@ -292,8 +296,8 @@ void M001_KeyApp(uint32_t keyEvent)
 	{
 
 		DailyStepSave((rtcApp.Read_Cur_Utc()/3600-1)*3600, DailyStepSaveRead());
+		NRF_LOG_INFO("1hour:utc:%d,step:%d\n", (rtcApp.Read_Cur_Utc()/3600-1)*3600, DailyStepSaveRead());
 		DailyStepSaveClear();
-
 	}
 
 
@@ -332,7 +336,7 @@ void M001_RtcApp(void)
     	}
     	else
     	{
-	        msg.id          = MOVT_MSG_MC_SET_AIM;
+	        msg.id          = MOVT_MSG_MC_SET_AIM_FORWARD;
 	        MovtEventSet(msg);
     	}
     }

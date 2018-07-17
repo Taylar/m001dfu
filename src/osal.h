@@ -23,6 +23,7 @@ extern uint32_t movtEvent;
 #define     BLE_UPGRADE_EVENT       0x0010
 #define     BLE_HIS_DATA_EVENT      0x0020
 #define     BLE_SEND_FINISH         0x0040
+#define     BLE_MODIFY_NAME         0x0080
 
 
 #define     DAILYAPP_MSG_SHORT_KEYS0_ISR        0x0001

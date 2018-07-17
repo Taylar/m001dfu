@@ -941,6 +941,8 @@ uint16_t  ClassifyDataRead(uint8_t *data, uint32_t addr, uint32_t length, uint32
 			}
 		}
 	}
+	if(i >= catalogTotalInfo.totalCatalog)
+		return 0xff;
 
 	return 0x00;
 }
@@ -1152,6 +1154,7 @@ uint16_t StorageDataRecover(void)
 					// 数据类型不同，无需继续查找
 					break;
 				}
+				addrTemp += CATALOG_INFO_LENGTH;
 			}
 
 			if(lastCatalog.utc == 0)
@@ -1265,88 +1268,88 @@ uint16_t StorageDataRecover(void)
 
 
 
-//void DataManageTest(void)
-//{
-//	uint32_t	i;
-//	uint32_t	j;
-//	uint32_t	k;
-//	uint32_t	m;
-//	uint32_t	n;
-//	uint16_t	catalogNumTemp;
-//	uint32_t	dataLengthTemp;
-//	uint8_t		datatemp[32];
-//	uint8_t		a, b;
-//	uint16_t	result;
-//	uint8_t		testFlag;
-//	uint8_t		saveLength;
-//	catalogInfo_s		testCatalog;
-//	catalogInfo_s		testCatalogRead;
-//	testFlag	= 0;
-//	uint32_t	g;
-//	m = 100;
-//	n = 4;
-//	a = 2;
-//	b = 10;
-//	saveLength = 31;
-//	DataManageInit();
+void DataManageTest(void)
+{
+	uint32_t	i;
+	uint32_t	j;
+	uint32_t	k;
+	uint32_t	m;
+	uint32_t	n;
+	uint16_t	catalogNumTemp;
+	uint32_t	dataLengthTemp;
+	uint8_t		datatemp[32];
+	uint8_t		a, b;
+	uint16_t	result;
+	uint8_t		testFlag;
+	uint8_t		saveLength;
+	catalogInfo_s		testCatalog;
+	catalogInfo_s		testCatalogRead;
+	testFlag	= 0;
+	uint32_t	g;
+	m = 100;
+	n = 4;
+	a = 2;
+	b = 10;
+	saveLength = 31;
+	DataManageInit();
 
-//	ClassifyDataInit(STEPDATA_CLASSIFY, DM_APP_SECTOR_LENGTH * a, DM_APP_SECTOR_LENGTH * b);
+	ClassifyDataInit(STEPDATA_CLASSIFY, DM_APP_SECTOR_LENGTH * a, DM_APP_SECTOR_LENGTH * b);
 
-//	if(testFlag)
-//		StorageDataRecover();
-//	result			= 0;
-//	// 写入测试
-//	for(i = 0; i < n; i++)
-//	{
-//		testCatalog.utc				= 100 * (i+1);
-//		g							= testCatalog.utc/100;
-//		testCatalog.dataClassify	= STEPDATA_CLASSIFY;
-//		testCatalog.sampleUnit		= DATASAMPLE_UNIT_10S;
-//		testCatalog.sampleInterval	= 30;
-//		testCatalog.unitLength		= 4;
+	if(testFlag)
+		StorageDataRecover();
+	result			= 0;
+	// 写入测试
+	for(i = 0; i < n; i++)
+	{
+		testCatalog.utc				= 3600 * (i+1);
+		g							= testCatalog.utc/3600;
+		testCatalog.dataClassify	= STEPDATA_CLASSIFY;
+		testCatalog.sampleUnit		= DATASAMPLE_UNIT_10S;
+		testCatalog.sampleInterval	= 30;
+		testCatalog.unitLength		= 4;
 
-//		CreateCatalog(& testCatalog);
+		CreateCatalog(& testCatalog);
 
-//		for(j = 0; j < m; j++)
-//		{
-//			for(k = 0; k < saveLength; k++)
-//			{
-//				datatemp[k] = j+k+g;
-//			}
+		for(j = 0; j < m; j++)
+		{
+			for(k = 0; k < saveLength; k++)
+			{
+				datatemp[k] = j+k+g;
+			}
 
-//			ClassifyDataSave(datatemp, saveLength, STEPDATA_CLASSIFY);
-//		}
-//		DataSaveEnd(STEPDATA_CLASSIFY);
-//	}
+			ClassifyDataSave(datatemp, saveLength, STEPDATA_CLASSIFY);
+		}
+		DataSaveEnd(STEPDATA_CLASSIFY);
+	}
 
-//	// 读取测试
-//	ClassifyDataInfoRead(&catalogNumTemp, &dataLengthTemp, STEPDATA_CLASSIFY);
+	// 读取测试
+	// ClassifyDataInfoRead(&catalogNumTemp, &dataLengthTemp, STEPDATA_CLASSIFY);
 
 
-//	for(i = 0; i < n; i++)
-//	{
-//		ClassifyDataCatalogRead(&testCatalogRead, STEPDATA_CLASSIFY, i);
-//		
-//		g		= testCatalogRead.utc/100;
-//		if(testCatalogRead.utc != (g)*100)
-//		{
-//			result++;
-//		}
+	// for(i = 0; i < n; i++)
+	// {
+	// 	ClassifyDataCatalogRead(&testCatalogRead, STEPDATA_CLASSIFY, i);
+		
+	// 	g		= testCatalogRead.utc/100;
+	// 	if(testCatalogRead.utc != (g)*100)
+	// 	{
+	// 		result++;
+	// 	}
 
-//		for(j = 0; j < m; j++)
-//		{
+	// 	for(j = 0; j < m; j++)
+	// 	{
 
-//			ClassifyDataRead(datatemp, j*saveLength, saveLength, testCatalogRead.utc, STEPDATA_CLASSIFY);
-//			for(k = 0; k < saveLength; k++)
-//			{
-//				if(datatemp[k] != (j+k+g))
-//					result++;
-//			}
-//		}
+	// 		ClassifyDataRead(datatemp, j*saveLength, saveLength, testCatalogRead.utc, STEPDATA_CLASSIFY);
+	// 		for(k = 0; k < saveLength; k++)
+	// 		{
+	// 			if(datatemp[k] != (j+k+g))
+	// 				result++;
+	// 		}
+	// 	}
 
-//		DeleteClassifyDataUtc(STEPDATA_CLASSIFY, testCatalogRead.utc);
-//	}
-//}
+	// 	DeleteClassifyDataUtc(STEPDATA_CLASSIFY, testCatalogRead.utc);
+	// }
+}
 
 // // dataManage
 const dataManage_s dataManage =

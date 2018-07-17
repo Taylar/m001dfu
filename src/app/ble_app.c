@@ -1,6 +1,8 @@
 #include "general.h"
 
 uint8_t bleSerialNum;
+uint8_t modifyBleNameFlah;
+
 
 protocal_msg_t bleSendMsg;
 protocal_msg_t bleRecMsg;
@@ -270,6 +272,7 @@ void BleProtocal(protocal_msg_t *msg)
 		if(msg->length < 16)
 		{
 			memcpy(m001BraodcastName, (char*)msg->load, msg->length);
+			modifyBleNameFlah = true;
 		}
 	    BlePack(DEVICE_COM_ACK, msg);
 		break;
@@ -314,8 +317,12 @@ void BleProtocal(protocal_msg_t *msg)
 
 		case APP_FW_UPDATA:
 		break;
-        
-        deflaut:
+		
+		case APP_REQ_PEER:
+		RequestPeer();
+		break;
+
+        default:
         break;
 
     }
@@ -342,6 +349,11 @@ void BleApp(uint32_t event)
 	if(BLE_DISCONNECT_EVENT & event)
 	{
 		bleMode = BLE_BROADCAST_MODE;
+		if(modifyBleNameFlah == true)
+		{
+			ModifyBleName();
+			modifyBleNameFlah = false;
+		}
 		//advertising_start();
 	}
 

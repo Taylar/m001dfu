@@ -24,10 +24,11 @@ static uint32_t dailyDatauploadTotalLen;		//该目录的总长度
 static uint16_t dailyDataCurUploadPackNum;		//当前上传的数据包序号
 
 static uint16_t dailyDataCurUploadClassify;		//当前上传的数据分类
-static uint16_t dailyDataCurCatalogUtc;			//当前上传的目录UTC
+static uint32_t dailyDataCurCatalogUtc;			//当前上传的目录UTC
 
 uint8_t			dataUploadFlag;
 
+uint8_t			dailyDataSendBug[20];
 
 enum
 {
@@ -271,14 +272,13 @@ uint16_t DailyStepRequestData(uint32_t dataClassify, uint32_t utc, uint16_t pack
 	}
 
 	//bleSendMsg.load[0] = HDATA_CATA_INFO;
-	bleSendMsg.load[0] = (uint8_t)(dailyDataCurUploadPackNum >> 8);
-	bleSendMsg.load[1] = (uint8_t)(dailyDataCurUploadPackNum);
-	bleSendMsg.load[2] = (uint8_t)(dailyDataCurUploadClassify >> 8);
-	bleSendMsg.load[3] = (uint8_t)(dailyDataCurUploadClassify);
-	bleSendMsg.length  = 20;
+	dailyDataSendBug[0] = (uint8_t)(dailyDataCurUploadPackNum >> 8);
+	dailyDataSendBug[1] = (uint8_t)(dailyDataCurUploadPackNum);
+	dailyDataSendBug[2] = (uint8_t)(dailyDataCurUploadClassify >> 8);
+	dailyDataSendBug[3] = (uint8_t)(dailyDataCurUploadClassify);
 	
 
-	result = dataManage.DataRead((bleSendMsg.load + 4), 
+	result = dataManage.DataRead((dailyDataSendBug + 4), 
 								dailyDatauploadTotalLen, lengthTemp, dailyDataCurCatalogUtc, dailyDataCurUploadClassify);
 
 	// 无效数据
@@ -293,7 +293,7 @@ uint16_t DailyStepRequestData(uint32_t dataClassify, uint32_t utc, uint16_t pack
 	}
 
 	// 发送数据
-	Ble_ldtHandleSend(bleSendMsg.load, 20);
+	Ble_ldtHandleSend(dailyDataSendBug, 20);
 
 	dailyDataCurUploadPackNum++;
 	dailyDatauploadTotalLen += lengthTemp;

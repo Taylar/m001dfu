@@ -45,7 +45,7 @@ void DailyStepProcess(void)
 
 	memset(G_sensorBuf,0,256);
     
-	setActionThreshold(250, 200, 250, 200);
+	setActionThreshold(220, 180, 220, 180);
 		
     accel.bsp->BspInterfaceEnable();
     accel.bsp->BufRead(&buflength, G_sensorBuf);
@@ -102,7 +102,7 @@ void DailyStepProcess(void)
 				 }
 			 }
 
-			 if(phoneState == PHONE_STATE_TAKE_PICTURE)
+			 // if(phoneState == PHONE_STATE_TAKE_PICTURE)
 			 {
 			     temp2 = actionRecongnition(G_sensorBuf + i*3);
 				 if(temp2 == 1)
