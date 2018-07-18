@@ -26,6 +26,12 @@ void Hourisr(void)
     SetKeyEvent(DAILYAPP_MSG_HOUR_ISR);
 }
 
+void Dayisr(void)
+{
+    SetKeyEvent(DAILYAPP_MSG_DAY_ISR);
+}
+
+
 void rtcNull(void)
 {
 
@@ -95,7 +101,7 @@ void  M001_AppInit(void)
 
 	bspAccel.BspInterfaceEnable();
 	bspAccel.Sleep();
-  bspAccel.BspInterfaceDisable();
+    bspAccel.BspInterfaceDisable();
 	
 
 	rtcApp.Init();
@@ -103,7 +109,7 @@ void  M001_AppInit(void)
     rtcApp.Cb_HalfSecIsrInit(rtcNull);
     rtcApp.Cb_MinIsrInit(rtcNull);
     rtcApp.Cb_HourIsrInit(Hourisr);
-    rtcApp.Cb_DayIsrInit(rtcNull);
+    rtcApp.Cb_DayIsrInit(Dayisr);
 
 	
 
@@ -223,6 +229,7 @@ void M001_3Hlongkey(void)
             else
             {
             	ble_disconnect_req();
+            	// advertising_stop();
             }
             bleMode = BLE_SLEEP_MODE;
 		}
@@ -300,6 +307,10 @@ void M001_KeyApp(uint32_t keyEvent)
 		DailyStepSaveClear();
 	}
 
+	if(DAILYAPP_MSG_DAY_ISR & keyEvent)
+	{
+		DailySportClear();
+	}
 
 
 }
@@ -311,6 +322,7 @@ void M001_RtcApp(void)
     rtc_time_s  timeTemp;
     static uint8_t flag;
     uint16_t posTemp;
+    uint32_t utcTemp;
 
 	if(sysMode != SYS_WORK_MODE)
 		return;
@@ -319,6 +331,14 @@ void M001_RtcApp(void)
 		return;
 
 	rtcApp.SecPeriodProcess();
+
+	// 每天凌晨5分钟请求时间
+	if(bleMode == BLE_CONNECT_MODE)
+	{
+		utcTemp = rtcApp.Read_Cur_Utc() % 86400;
+		if((utcTemp == 300) || (utcTemp == 43500))
+			BlePack(DEVICE_REQUST_RTC, &bleSendMsg);
+	}
 
 	if(phoneState != PHONE_STATE_ADJUST_MOVT && sportModeTime == 0)
     {

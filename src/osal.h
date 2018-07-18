@@ -36,6 +36,7 @@ extern uint32_t movtEvent;
 #define     DAILYAPP_MSG_HOLD6S_KEYS1_ISR       0x0080
 #define     DAILYAPP_MSG_HOLD6S_KEYS2_ISR       0x0100
 #define     DAILYAPP_MSG_HOUR_ISR               0x0200
+#define     DAILYAPP_MSG_DAY_ISR	            0x0400
 // key event
 #define     KEY_S0_
 

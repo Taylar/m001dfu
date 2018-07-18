@@ -22,6 +22,12 @@ void DailySportInit(void)
     dailyStepAim            = 10000;
 }
 
+void DailySportClear(void)
+{
+    dailyTotalStep          = 0;
+    dailyStepComplete       = 0;
+}
+
 
 uint32_t DailyStepSaveRead(void)
 {

@@ -279,6 +279,7 @@ void BleProtocal(protocal_msg_t *msg)
 		case APP_SET_BRO_NAME:
 		if(msg->length < 16)
 		{
+			memset(m001BraodcastName, 0, sizeof(m001BraodcastName));
 			memcpy(m001BraodcastName, (char*)msg->load, msg->length);
 			modifyBleNameFlah = true;
 		}
