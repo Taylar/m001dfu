@@ -164,6 +164,10 @@ void BleProtocal(protocal_msg_t *msg)
 		{
 			temp = -(int8_t)msg->load[4];
 		}
+        else
+        {
+            temp = (int8_t)msg->load[4];
+        }
 		dailyRtc2.zone = ((temp / 10) << 8) + (temp % 10 * 10);
 
 		rtcApp.TimeZoneTransform(&dailyRtc, &dailyRtc2);

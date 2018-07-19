@@ -346,7 +346,7 @@ void M001_RtcApp(void)
     	rtcApp.Read(&timeTemp);
     	posTemp = GetMovtCurPos();
     	msg.aim 		= ExchangeTimeforCount(timeTemp.hour, timeTemp.min, timeTemp.sec);
-    	if(posTemp > msg.aim)
+    	if(posTemp > msg.aim && ((posTemp - msg.aim) < 60) )
     	{
     		if(flag)
     		{
