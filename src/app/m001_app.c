@@ -160,7 +160,8 @@ void M001_3Hshortkey(void)
 	else if(sysMode == SYS_WORK_MODE)
 	{
 		sportModeTime = 1;
-		DisplaySportComplete(dailyStepComplete);
+		if(phoneState != PHONE_STATE_PEER && (phoneState != PHONE_STATE_TAKE_PICTURE))
+			DisplaySportComplete(dailyStepComplete);
 
 		if(bleMode == BLE_BROADCAST_MODE)
 		{
@@ -239,7 +240,7 @@ void M001_3Hlongkey(void)
 
 void M001_3Hlongkey_6s(void)
 {
-
+	sd_nvic_SystemReset();
 }
 
 
@@ -336,7 +337,7 @@ void M001_RtcApp(void)
 	if(bleMode == BLE_CONNECT_MODE)
 	{
 		utcTemp = rtcApp.Read_Cur_Utc() % 86400;
-		if((utcTemp == 300) || (utcTemp == 43500))
+		if((utcTemp == 300))
 			BlePack(DEVICE_REQUST_RTC, &bleSendMsg);
 	}
 
@@ -346,7 +347,7 @@ void M001_RtcApp(void)
     	rtcApp.Read(&timeTemp);
     	posTemp = GetMovtCurPos();
     	msg.aim 		= ExchangeTimeforCount(timeTemp.hour, timeTemp.min, timeTemp.sec);
-    	if(posTemp > msg.aim && ((posTemp - msg.aim) < 60) )
+    	if(posTemp > msg.aim && ((posTemp - msg.aim) < 300) )
     	{
     		if(flag)
     		{

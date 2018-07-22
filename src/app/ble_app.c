@@ -159,16 +159,17 @@ void BleProtocal(protocal_msg_t *msg)
 				&dailyRtc);
 
 		dailyRtc.zone = 0;
-
+		temp = (int8_t)msg->load[4];
 		if((int8_t)msg->load[4] < 0)
 		{
 			temp = -(int8_t)msg->load[4];
+			dailyRtc2.zone = -(((temp / 10)&0xff) << 8) | ((temp % 10 * 10) & 0xff);
 		}
         else
         {
             temp = (int8_t)msg->load[4];
+			dailyRtc2.zone = ((temp / 10) << 8) + (temp % 10 * 10);
         }
-		dailyRtc2.zone = ((temp / 10) << 8) + (temp % 10 * 10);
 
 		rtcApp.TimeZoneTransform(&dailyRtc, &dailyRtc2);
 		rtcApp.Write(&dailyRtc2);
