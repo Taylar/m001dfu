@@ -367,7 +367,12 @@ void BleApp(uint32_t event)
 
 	if(BLE_DISCONNECT_EVENT & event)
 	{
+		if(phoneState == PHONE_STATE_PEER)
+		{
+			SetSinglePort(GREEN_LED, LED_PORT_ACTIVE_STATE, 125, 125, 1);
+		}
 		bleMode = BLE_BROADCAST_MODE;
+		phoneState = PHONE_STATE_NORMAL;
 		if(modifyBleNameFlah == true)
 		{
 			ModifyBleName();

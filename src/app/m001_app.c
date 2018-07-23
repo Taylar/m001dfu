@@ -159,9 +159,11 @@ void M001_3Hshortkey(void)
 	}
 	else if(sysMode == SYS_WORK_MODE)
 	{
-		sportModeTime = 1;
 		if(phoneState != PHONE_STATE_PEER && (phoneState != PHONE_STATE_TAKE_PICTURE))
+		{
+			sportModeTime = 1;
 			DisplaySportComplete(dailyStepComplete);
+		}
 
 		if(bleMode == BLE_BROADCAST_MODE)
 		{
