@@ -176,14 +176,14 @@ void M001_3Hshortkey(void)
 			// BlePack(DEVICE_REQ_TAKE_PIC, &bleSendMsg);
 		}
 
-		if(appPeerModeTime && (phoneState == PHONE_STATE_PEER))
+		if(phoneState == PHONE_STATE_PEER)
 		{
 			appPeerModeTime = 0;
 			phoneState = APP_NORMAL_MODE;
 			BlePack(DEVICE_COMMIT_LINK, &bleSendMsg);
 		}
 
-		if((phoneState == PHONE_STATE_TAKE_PICTURE) && takePicModeTime)
+		if(phoneState == PHONE_STATE_TAKE_PICTURE)
 		{
 			BlePack(DEVICE_REQ_TAKE_PIC, &bleSendMsg);
 		}
@@ -378,6 +378,7 @@ void M001_RtcApp(void)
     	if(appPeerModeTime >= 60)
     	{
     		appPeerModeTime = 0;
+    		phoneState = PHONE_STATE_NORMAL;
     	}
     }
 
