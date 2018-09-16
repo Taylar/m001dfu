@@ -206,6 +206,9 @@ void BleProtocal(protocal_msg_t *msg)
 							(((uint32_t)msg->load[2]) << 16) +
 							(((uint32_t)msg->load[3]) << 8) +
 							(((uint32_t)msg->load[4]));
+			dailyStepComplete   = (uint16_t)(dailyTotalStep * 100 / dailyStepAim);
+            if(dailyStepComplete > 100)
+                dailyStepComplete = 100;
 
 		    BlePack(DEVICE_COM_ACK, msg);
 		}
@@ -371,7 +374,12 @@ void BleApp(uint32_t event)
 		{
 			SetSinglePort(GREEN_LED, LED_PORT_ACTIVE_STATE, 125, 125, 1);
 		}
-		bleMode = BLE_BROADCAST_MODE;
+    	advertising_stop();
+		if(bleMode != BLE_SLEEP_MODE)
+		{
+			advertising_start(true);
+			bleMode = BLE_BROADCAST_MODE;
+		}
 		phoneState = PHONE_STATE_NORMAL;
 		if(modifyBleNameFlah == true)
 		{

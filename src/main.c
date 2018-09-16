@@ -1192,7 +1192,7 @@ int main(void)
     uart_init();
     nrf_gpio_cfg_input(RX_PIN_NUMBER,NRF_GPIO_PIN_PULLUP);
 #endif
-
+    nrf_delay_ms(1000);
     log_init();
 
     timers_init();
@@ -1218,7 +1218,7 @@ int main(void)
     printf("\r\nUART started.\r\n");
 #endif
     NRF_LOG_INFO("Debug logging for UART over RTT started.");
-    //advertising_start(false);
+    // advertising_start(true);
 
 
     // Enter main loop.

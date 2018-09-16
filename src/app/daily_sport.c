@@ -51,7 +51,7 @@ void DailyStepProcess(void)
 
 	memset(G_sensorBuf,0,256);
     
-	setActionThreshold(220, 180, 220, 180);
+	setActionThreshold(180, 100, 180, 100);
 		
     accel.bsp->BspInterfaceEnable();
     accel.bsp->BufRead(&buflength, G_sensorBuf);

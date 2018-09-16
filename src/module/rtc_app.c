@@ -237,9 +237,15 @@ uint8_t MonthDay(uint16_t year_1, uint8_t month_1)
 	return 0xff;
 }
 
-
+uint16_t adjustRtcTime = 0;
  void RtcSecPeriodProcess(void)
 {
+	adjustRtcTime++;
+	if(adjustRtcTime>= 5400)
+	{
+		adjustRtcTime = 0;
+		return;
+	}
 	rtcTime.sec ++;
 	if(rtcTime.sec > 59)
 	{
