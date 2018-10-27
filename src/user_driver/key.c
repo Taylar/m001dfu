@@ -55,8 +55,8 @@ static void null_isr(void)
 // set key timer 31.25ms
 void BspKeyTimerInit(void)
 {
-    uint32_t err_code;
-	err_code = app_timer_create(&keyHoldTmr,
+    
+	app_timer_create(&keyHoldTmr,
                                 APP_TIMER_MODE_REPEATED,
                                 BspKeyTimerIsr);
 }
@@ -75,7 +75,6 @@ void BspKeyTimerStop(void)
 
 void BspKeyInit(void)
 {
-	uint32_t  err_code;
     uint8_t i;
 
     bspDefineKey[KEY_S0].keyPin	= KEY_S0_PIN;
@@ -91,8 +90,7 @@ void BspKeyInit(void)
 
 	if (!nrf_drv_gpiote_is_init())
     {
-        err_code = nrf_drv_gpiote_init();
-//        VERIFY_SUCCESS(err_code);
+        nrf_drv_gpiote_init();
     }
     
 
@@ -100,9 +98,9 @@ void BspKeyInit(void)
 	
     config.pull = NRF_GPIO_PIN_PULLUP;
 
-    err_code = nrf_drv_gpiote_in_init(KEY_S0_PIN, &config, (nrfx_gpiote_evt_handler_t)BspKeyS0_Isr);
-    err_code = nrf_drv_gpiote_in_init(KEY_S1_PIN, &config, (nrfx_gpiote_evt_handler_t)BspKeyS1_Isr);
-    err_code = nrf_drv_gpiote_in_init(KEY_S2_PIN, &config, (nrfx_gpiote_evt_handler_t)BspKeyS2_Isr);
+    nrf_drv_gpiote_in_init(KEY_S0_PIN, &config, (nrfx_gpiote_evt_handler_t)BspKeyS0_Isr);
+    nrf_drv_gpiote_in_init(KEY_S1_PIN, &config, (nrfx_gpiote_evt_handler_t)BspKeyS1_Isr);
+    nrf_drv_gpiote_in_init(KEY_S2_PIN, &config, (nrfx_gpiote_evt_handler_t)BspKeyS2_Isr);
 
     for(i = 0; i < KEY_MAX_NUM; i++)
     {

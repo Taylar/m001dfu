@@ -69,6 +69,8 @@ typedef struct
 // rtc 从2000--2099（year = 0--99）
 extern const rtc_s rtcApp;
 
+extern uint32_t adjustRtcTime;
+
 void RtcInit(void);
 
 void RtcStart(void);

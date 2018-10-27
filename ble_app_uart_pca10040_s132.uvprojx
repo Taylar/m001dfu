@@ -461,6 +461,11 @@
               <FilePath>.\src\module\singleportdrive_app.c</FilePath>
             </File>
             <File>
+              <FileName>accel_sensor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\user_driver\accel_sensor.c</FilePath>
+            </File>
+            <File>
               <FileName>data_manage_app.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\module\data_manage_app.c</FilePath>
@@ -470,11 +475,6 @@
         <Group>
           <GroupName>user_driver</GroupName>
           <Files>
-            <File>
-              <FileName>accel_sensor.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\src\user_driver\accel_sensor.c</FilePath>
-            </File>
             <File>
               <FileName>extflash.c</FileName>
               <FileType>1</FileType>
@@ -3789,6 +3789,11 @@
               <FilePath>.\src\module\singleportdrive_app.c</FilePath>
             </File>
             <File>
+              <FileName>accel_sensor.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\src\user_driver\accel_sensor.c</FilePath>
+            </File>
+            <File>
               <FileName>data_manage_app.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\src\module\data_manage_app.c</FilePath>
@@ -3798,11 +3803,6 @@
         <Group>
           <GroupName>user_driver</GroupName>
           <Files>
-            <File>
-              <FileName>accel_sensor.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\src\user_driver\accel_sensor.c</FilePath>
-            </File>
             <File>
               <FileName>extflash.c</FileName>
               <FileType>1</FileType>

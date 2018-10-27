@@ -28,7 +28,7 @@ void BlePack(uint32_t command, protocal_msg_t *msg)
 {
 	uint8_t		serialNumTemp;
 	uint16_t	idTemp;
-	uint8_t 	i;
+	
 
 	serialNumTemp = msg->serialNum;
 	idTemp		  = (msg->id[0] << 8) + msg->id[1];
@@ -159,6 +159,7 @@ void BleProtocal(protocal_msg_t *msg)
 				&dailyRtc);
 
 		dailyRtc.zone = 0;
+		adjustRtcTime = 0;
 		temp = (int8_t)msg->load[4];
 		if((int8_t)msg->load[4] < 0)
 		{
@@ -268,7 +269,8 @@ void BleProtocal(protocal_msg_t *msg)
 
 			rtcApp.TimeZoneTransform(&dailyRtc, &dailyRtc2);
 			rtcApp.Write(&dailyRtc2);
-
+			
+			adjustRtcTime = 0;
 			movtMsg.cur = ((uint16_t)msg->load[6] << 8) + msg->load[7];
 			movtMsg.aim = ExchangeTimeforCount(dailyRtc2.hour, dailyRtc2.min, dailyRtc2.sec);
 			
@@ -353,7 +355,7 @@ void BleProtocal(protocal_msg_t *msg)
 
 void BleApp(uint32_t event)
 {
-	uint16_t  i;
+	movt_task_msg_t     movtMsg;
 	if(BLE_ADV_EVENT & event)
 	{
 		bleMode = BLE_BROADCAST_MODE;
@@ -370,6 +372,8 @@ void BleApp(uint32_t event)
 
 	if(BLE_DISCONNECT_EVENT & event)
 	{
+        movtMsg.id          = MOVT_MSG_MC_RECOVER_FORWARD;
+		MovtEventSet(movtMsg);
 		if(phoneState == PHONE_STATE_PEER)
 		{
 			SetSinglePort(GREEN_LED, LED_PORT_ACTIVE_STATE, 125, 125, 1);
