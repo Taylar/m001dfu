@@ -378,10 +378,13 @@ void BleApp(uint32_t event)
 		{
 			SetSinglePort(GREEN_LED, LED_PORT_ACTIVE_STATE, 125, 125, 1);
 		}
-    	advertising_stop();
-		if(bleMode != BLE_SLEEP_MODE)
+		if(bleMode == BLE_SLEEP_MODE)
 		{
-			advertising_start(true);
+	    	advertising_stop();
+			// advertising_start(true);
+		}
+		else
+		{
 			bleMode = BLE_BROADCAST_MODE;
 		}
 		phoneState = PHONE_STATE_NORMAL;
@@ -390,7 +393,6 @@ void BleApp(uint32_t event)
 			ModifyBleName();
 			modifyBleNameFlah = false;
 		}
-		//advertising_start();
 	}
 
 

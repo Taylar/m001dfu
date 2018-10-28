@@ -49,10 +49,10 @@ void setActionThreshold(unsigned char up1, unsigned char up2, unsigned char down
     threshold[2] = down1;
     threshold[3] = down2;
 }
-#define StepUp1                     threshold[0]//125
-#define StepUp2                     threshold[1]//55
-#define StepDown1                   threshold[2]//115
-#define StepDown2                   threshold[3]//45
+#define ACTION_UP1                     threshold[0]//125
+#define ACTION_UP2                     threshold[1]//55
+#define ACTION_DOWN1                   threshold[2]//115
+#define ACTION_DOWN2                   threshold[3]//45
 
 
 // *******************************************************************************
@@ -124,11 +124,11 @@ int actionRecongnition(unsigned char xyzDataTemp[3])
             MaxAcceleration = x2y2z2[4];
         }
         if(Lis3DStepFlag.up){        //if has find up
-            if(x2y2z2[4] > CompareData + StepUp2) {
+            if(x2y2z2[4] > CompareData + ACTION_UP2) {
                 CompareData = x2y2z2[4];
             }
         } else {
-            if(x2y2z2[4] > CompareData + StepUp1) {
+            if(x2y2z2[4] > CompareData + ACTION_UP1) {
                 CompareData = x2y2z2[4];
                 MaxAcceleration = x2y2z2[4];
                 Lis3DStepFlag.up = 1;
@@ -141,12 +141,12 @@ int actionRecongnition(unsigned char xyzDataTemp[3])
             MinAcceleration = x2y2z2[4];
         }
         if(Lis3DStepFlag.down) {
-            if(CompareData > x2y2z2[4] + StepDown2) {
+            if(CompareData > x2y2z2[4] + ACTION_DOWN2) {
                 CompareData = x2y2z2[4];
                 tempflag = 1;
             }
         } else {
-            if(CompareData > x2y2z2[4] + StepDown1) {
+            if(CompareData > x2y2z2[4] + ACTION_DOWN1) {
                 CompareData = x2y2z2[4];
                 MinAcceleration = x2y2z2[4];
                 Lis3DStepFlag.down = 1;

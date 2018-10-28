@@ -90,7 +90,8 @@
 #include "fds.h"
 #include "ble_conn_state.h"
 
-
+#include "nrf_ble_gatts_c.h"
+#include "nrf_ble_ancs_c.h"
 
 #include "general.h"
 
@@ -106,12 +107,15 @@
 
 static pm_peer_id_t m_whitelist_peers[BLE_GAP_WHITELIST_ADDR_MAX_COUNT];            /**< List of peers currently in the whitelist. */
 static uint32_t     m_whitelist_peer_cnt;                                           /**< Number of peers currently in the whitelist. */
-static uint16_t     m_cur_conn_handle = BLE_CONN_HANDLE_INVALID;                    /**< Handle of the current connection. */
+//static uint16_t     m_cur_conn_handle = BLE_CONN_HANDLE_INVALID;                    /**< Handle of the current connection. */
 
 #define SECURITY_REQUEST_DELAY         APP_TIMER_TICKS(1500)                        /**< Delay after connection until security request is sent, if necessary (ticks). */
 
 
 #define APP_BLE_CONN_CFG_TAG            1                                           /**< A tag identifying the SoftDevice BLE configuration. */
+
+
+#define ATTR_DATA_SIZE                 BLE_ANCS_ATTR_DATA_MAX                       /**< Allocated size for attribute data. */
 
 char m001BraodcastName[16] = "M001A";
 
@@ -143,7 +147,9 @@ BLE_NUS_DEF(m_nus, NRF_SDH_BLE_TOTAL_LINK_COUNT);                               
 NRF_BLE_GATT_DEF(m_gatt);                                                           /**< GATT module instance. */
 NRF_BLE_QWR_DEF(m_qwr);                                                             /**< Context for the Queued Write module.*/
 BLE_ADVERTISING_DEF(m_advertising);                                                 /**< Advertising module instance. */
-//BLE_DB_DISCOVERY_DEF(m_db_disc);
+BLE_DB_DISCOVERY_DEF(m_db_disc);
+NRF_BLE_GATTS_C_DEF(m_gatts_c);                                                     /**< GATT Service client instance. Handles Service Changed indications from the peer. */
+BLE_ANCS_C_DEF(m_ancs_c);                                                           /**< Apple Notification Service Client instance. */
 
 static uint16_t   m_conn_handle          = BLE_CONN_HANDLE_INVALID;                 /**< Handle of the current connection. */
 static uint16_t   m_ble_nus_max_data_len = BLE_GATT_ATT_MTU_DEFAULT - 3;            /**< Maximum length of data (in bytes) that can be transmitted to the peer by the Nordic UART service module. */
@@ -151,6 +157,65 @@ static ble_uuid_t m_adv_uuids[]          =                                      
 {
     {BLE_UUID_NUS_SERVICE, NUS_SERVICE_UUID_TYPE}
 };
+
+static ble_ancs_c_evt_notif_t m_notification_latest;                                /**< Local copy to keep track of the newest arriving notifications. */
+static ble_ancs_c_attr_t      m_notif_attr_latest;                                  /**< Local copy of the newest notification attribute. */
+static ble_ancs_c_attr_t      m_notif_attr_app_id_latest;                           /**< Local copy of the newest app attribute. */
+
+static uint8_t m_attr_appid[ATTR_DATA_SIZE];                                        /**< Buffer to store attribute data. */
+static uint8_t m_attr_title[ATTR_DATA_SIZE];                                        /**< Buffer to store attribute data. */
+static uint8_t m_attr_subtitle[ATTR_DATA_SIZE];                                     /**< Buffer to store attribute data. */
+static uint8_t m_attr_message[ATTR_DATA_SIZE];                                      /**< Buffer to store attribute data. */
+static uint8_t m_attr_message_size[ATTR_DATA_SIZE];                                 /**< Buffer to store attribute data. */
+static uint8_t m_attr_date[ATTR_DATA_SIZE];                                         /**< Buffer to store attribute data. */
+static uint8_t m_attr_posaction[ATTR_DATA_SIZE];                                    /**< Buffer to store attribute data. */
+static uint8_t m_attr_negaction[ATTR_DATA_SIZE];                                    /**< Buffer to store attribute data. */
+static uint8_t m_attr_disp_name[ATTR_DATA_SIZE];                                    /**< Buffer to store attribute data. */
+
+/**@brief String literals for the iOS notification categories. used then printing to UART. */
+static char const * lit_catid[BLE_ANCS_NB_OF_CATEGORY_ID] =
+{
+    "Other",
+    "Incoming Call",
+    "Missed Call",
+    "Voice Mail",
+    "Social",
+    "Schedule",
+    "Email",
+    "News",
+    "Health And Fitness",
+    "Business And Finance",
+    "Location",
+    "Entertainment"
+};
+
+/**@brief String literals for the iOS notification event types. Used then printing to UART. */
+static char const * lit_eventid[BLE_ANCS_NB_OF_EVT_ID] =
+{
+    "Added",
+    "Modified",
+    "Removed"
+};
+
+/**@brief String literals for the iOS notification attribute types. Used when printing to UART. */
+static char const * lit_attrid[BLE_ANCS_NB_OF_NOTIF_ATTR] =
+{
+    "App Identifier",
+    "Title",
+    "Subtitle",
+    "Message",
+    "Message Size",
+    "Date",
+    "Positive Action Label",
+    "Negative Action Label"
+};
+
+/**@brief String literals for the iOS notification attribute types. Used When printing to UART. */
+static char const * lit_appid[BLE_ANCS_NB_OF_APP_ATTR] =
+{
+    "Display Name"
+};
+
 
 ble_gap_addr_t bleMac;
 
@@ -308,23 +373,23 @@ void advertising_start(bool erase_bonds)
     }
     else
     {
-//            ret_code_t ret;
+            ret_code_t ret;
 
-//        memset(m_whitelist_peers, PM_PEER_ID_INVALID, sizeof(m_whitelist_peers));
-//        m_whitelist_peer_cnt = (sizeof(m_whitelist_peers) / sizeof(pm_peer_id_t));
+        memset(m_whitelist_peers, PM_PEER_ID_INVALID, sizeof(m_whitelist_peers));
+        m_whitelist_peer_cnt = (sizeof(m_whitelist_peers) / sizeof(pm_peer_id_t));
 
-//        peer_list_get(m_whitelist_peers, &m_whitelist_peer_cnt);
+        peer_list_get(m_whitelist_peers, &m_whitelist_peer_cnt);
 
-//        ret = pm_whitelist_set(m_whitelist_peers, m_whitelist_peer_cnt);
-//        APP_ERROR_CHECK(ret);
+        ret = pm_whitelist_set(m_whitelist_peers, m_whitelist_peer_cnt);
+        APP_ERROR_CHECK(ret);
 
-//        // Setup the device identies list.
-//        // Some SoftDevices do not support this feature.
-//        ret = pm_device_identities_list_set(m_whitelist_peers, m_whitelist_peer_cnt);
-//        if (ret != NRF_ERROR_NOT_SUPPORTED)
-//        {
-//            APP_ERROR_CHECK(ret);
-//        }
+        // Setup the device identies list.
+        // Some SoftDevices do not support this feature.
+        ret = pm_device_identities_list_set(m_whitelist_peers, m_whitelist_peer_cnt);
+        if (ret != NRF_ERROR_NOT_SUPPORTED)
+        {
+            APP_ERROR_CHECK(ret);
+        }
                 
         uint32_t err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_FAST);
         APP_ERROR_CHECK(err_code);
@@ -341,7 +406,7 @@ void advertising_start(bool erase_bonds)
  */
 static void pm_evt_handler(pm_evt_t const * p_evt)
 {
-    ret_code_t err_code;
+    ret_code_t err_code, ret;
 
     switch (p_evt->evt_id)
     {
@@ -358,8 +423,8 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
                          p_evt->params.conn_sec_succeeded.procedure);
                     
                         // Discover peer's services.
-//            err_code  = ble_db_discovery_start(&m_db_disc, p_evt->conn_handle);
-//            APP_ERROR_CHECK(err_code);
+            err_code  = ble_db_discovery_start(&m_db_disc, p_evt->conn_handle);
+            APP_ERROR_CHECK(err_code);
         } break;
 
         case PM_EVT_CONN_SEC_FAILED:
@@ -398,6 +463,35 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
             advertising_start(false);
         } break;
 
+//        case PM_EVT_PEER_DATA_UPDATE_SUCCEEDED:
+//        {
+//            // Note: You should check on what kind of white list policy your application should use.
+//            if (     p_evt->params.peer_data_update_succeeded.flash_changed
+//                 && (p_evt->params.peer_data_update_succeeded.data_id == PM_PEER_DATA_ID_BONDING))
+//            {
+//                NRF_LOG_DEBUG("New Bond, add the peer to the whitelist if possible");
+//                NRF_LOG_DEBUG("\tm_whitelist_peer_cnt %d, MAX_PEERS_WLIST %d",
+//                               m_whitelist_peer_cnt + 1,
+//                               BLE_GAP_WHITELIST_ADDR_MAX_COUNT);
+
+//                if (m_whitelist_peer_cnt < BLE_GAP_WHITELIST_ADDR_MAX_COUNT)
+//                {
+//                    // Bonded to a new peer, add it to the whitelist.
+//                    m_whitelist_peers[m_whitelist_peer_cnt++] = p_evt->peer_id;
+
+//                    // The whitelist has been modified, update it in the Peer Manager.
+//                    ret = pm_device_identities_list_set(m_whitelist_peers, m_whitelist_peer_cnt);
+//                    if (ret != NRF_ERROR_NOT_SUPPORTED)
+//                    {
+//                        APP_ERROR_CHECK(ret);
+//                    }
+
+//                    ret = pm_whitelist_set(m_whitelist_peers, m_whitelist_peer_cnt);
+//                    APP_ERROR_CHECK(ret);
+//                }
+//            }
+//        } break;
+        
         case PM_EVT_PEER_DATA_UPDATE_FAILED:
         {
             // Assert.
@@ -423,7 +517,7 @@ static void pm_evt_handler(pm_evt_t const * p_evt)
         } break;
 
         case PM_EVT_CONN_SEC_START:
-        case PM_EVT_PEER_DATA_UPDATE_SUCCEEDED:
+       // case PM_EVT_PEER_DATA_UPDATE_SUCCEEDED:
         case PM_EVT_PEER_DELETE_SUCCEEDED:
         case PM_EVT_LOCAL_DB_CACHE_APPLIED:
         case PM_EVT_LOCAL_DB_CACHE_APPLY_FAILED:
@@ -634,8 +728,317 @@ static void nus_data_handler(ble_nus_evt_t * p_evt)
 //    }
 
 }
-/**@snippet [Handling the data received over BLE] */
 
+
+
+/**@brief Function for handling events from the GATT Servive client module.
+
+   @param[in] p_evt GATT Service event.
+*/
+static void gatts_c_evt_handler(nrf_ble_gatts_c_evt_t * p_evt)
+{
+    ret_code_t ret;
+
+    switch (p_evt->evt_type)
+    {
+        case NRF_BLE_GATTS_C_EVT_DISCOVERY_COMPLETE:
+        {
+            NRF_LOG_DEBUG("GATT Service and Service Changed characteristic found on server.");
+
+            ret = nrf_ble_gatts_c_handles_assign(&m_gatts_c,
+                                                 p_evt->conn_handle,
+                                                 &p_evt->params.srv_changed_char);
+            APP_ERROR_CHECK(ret);
+
+            ret = nrf_ble_gatts_c_enable_indication(&m_gatts_c, true);
+            APP_ERROR_CHECK(ret);
+        } break;
+
+        case NRF_BLE_GATTS_C_EVT_DISCOVERY_FAILED:
+            NRF_LOG_DEBUG("GATT Service or Service Changed characteristic not found on server.");
+            break;
+
+        case NRF_BLE_GATTS_C_EVT_DISCONN_COMPLETE:
+            NRF_LOG_DEBUG("GATTS Service client disconnected connection handle %i.", p_evt->conn_handle);
+            break;
+
+        case NRF_BLE_GATTS_C_EVT_SRV_CHANGED:
+            NRF_LOG_DEBUG("Service Changed indication received.");
+
+            // Discover peer's services.
+            ret = ble_db_discovery_start(&m_db_disc, p_evt->conn_handle);
+            APP_ERROR_CHECK(ret);
+            break;
+
+        default:
+            break;
+    }
+}
+
+
+
+
+/**@brief Function for setting up GATTC notifications from the Notification Provider.
+ *
+ * @details This function is called when a successful connection has been established.
+ */
+static void apple_notification_setup(void)
+{
+    ret_code_t ret;
+
+    nrf_delay_ms(100); // Delay because we cannot add a CCCD to close to starting encryption. iOS specific.
+
+    ret = ble_ancs_c_notif_source_notif_enable(&m_ancs_c);
+    APP_ERROR_CHECK(ret);
+
+    ret = ble_ancs_c_data_source_notif_enable(&m_ancs_c);
+    APP_ERROR_CHECK(ret);
+
+    NRF_LOG_DEBUG("Notifications Enabled.");
+}
+
+
+/**@brief Function for printing an iOS notification.
+ *
+ * @param[in] p_notif  Pointer to the iOS notification.
+ */
+static void notif_print(ble_ancs_c_evt_notif_t * p_notif)
+{
+    NRF_LOG_INFO("\r\nNotification");
+    NRF_LOG_INFO("Event:       %s", (uint32_t)lit_eventid[p_notif->evt_id]);
+    NRF_LOG_INFO("Category ID: %s", (uint32_t)lit_catid[p_notif->category_id]);
+    NRF_LOG_INFO("Category Cnt:%u", (unsigned int) p_notif->category_count);
+    NRF_LOG_INFO("UID:         %u", (unsigned int) p_notif->notif_uid);
+
+    NRF_LOG_INFO("Flags:");
+    if (p_notif->evt_flags.silent == 1)
+    {
+        NRF_LOG_INFO(" Silent");
+    }
+    if (p_notif->evt_flags.important == 1)
+    {
+        NRF_LOG_INFO(" Important");
+    }
+    if (p_notif->evt_flags.pre_existing == 1)
+    {
+        NRF_LOG_INFO(" Pre-existing");
+    }
+    if (p_notif->evt_flags.positive_action == 1)
+    {
+        NRF_LOG_INFO(" Positive Action");
+    }
+    if (p_notif->evt_flags.negative_action == 1)
+    {
+        NRF_LOG_INFO(" Negative Action");
+    }
+}
+
+
+
+/**@brief Function for printing iOS notification attribute data.
+ *
+ * @param[in] p_attr Pointer to an iOS notification attribute.
+ */
+static void notif_attr_print(ble_ancs_c_attr_t * p_attr)
+{
+    if (p_attr->attr_len != 0)
+    {
+        NRF_LOG_INFO("%s: %s", (uint32_t)lit_attrid[p_attr->attr_id], nrf_log_push((char *)p_attr->p_attr_data));
+    }
+    else if (p_attr->attr_len == 0)
+    {
+        NRF_LOG_INFO("%s: (N/A)", (uint32_t)lit_attrid[p_attr->attr_id]);
+    }
+}
+
+
+/**@brief Function for printing iOS notification attribute data.
+ *
+ * @param[in] p_attr Pointer to an iOS App attribute.
+ */
+static void app_attr_print(ble_ancs_c_attr_t * p_attr)
+{
+    if (p_attr->attr_len != 0)
+    {
+        NRF_LOG_INFO("%s: %s", (uint32_t)lit_appid[p_attr->attr_id], (uint32_t)p_attr->p_attr_data);
+    }
+    else if (p_attr->attr_len == 0)
+    {
+        NRF_LOG_INFO("%s: (N/A)", (uint32_t) lit_appid[p_attr->attr_id]);
+    }
+}
+
+
+/**@brief Function for printing out errors that originated from the Notification Provider (iOS).
+ *
+ * @param[in] err_code_np Error code received from NP.
+ */
+static void err_code_print(uint16_t err_code_np)
+{
+    switch (err_code_np)
+    {
+        case BLE_ANCS_NP_UNKNOWN_COMMAND:
+            NRF_LOG_INFO("Error: Command ID was not recognized by the Notification Provider. ");
+            break;
+
+        case BLE_ANCS_NP_INVALID_COMMAND:
+            NRF_LOG_INFO("Error: Command failed to be parsed on the Notification Provider. ");
+            break;
+
+        case BLE_ANCS_NP_INVALID_PARAMETER:
+            NRF_LOG_INFO("Error: Parameter does not refer to an existing object on the Notification Provider. ");
+            break;
+
+        case BLE_ANCS_NP_ACTION_FAILED:
+            NRF_LOG_INFO("Error: Perform Notification Action Failed on the Notification Provider. ");
+            break;
+
+        default:
+            break;
+    }
+}
+
+/**@brief Function for handling the Apple Notification Service client.
+ *
+ * @details This function is called for all events in the Apple Notification client that
+ *          are passed to the application.
+ *
+ * @param[in] p_evt  Event received from the Apple Notification Service client.
+ */
+static void ancs_c_evt_handler(ble_ancs_c_evt_t * p_evt)
+{
+    ret_code_t ret = NRF_SUCCESS;
+
+    switch (p_evt->evt_type)
+    {
+        case BLE_ANCS_C_EVT_DISCOVERY_COMPLETE:
+            NRF_LOG_DEBUG("Apple Notification Center Service discovered on the server.");
+            ret = nrf_ble_ancs_c_handles_assign(&m_ancs_c, p_evt->conn_handle, &p_evt->service);
+            APP_ERROR_CHECK(ret);
+            apple_notification_setup();
+            break;
+
+        case BLE_ANCS_C_EVT_NOTIF:
+            m_notification_latest = p_evt->notif;
+            notif_print(&m_notification_latest);
+            break;
+
+        case BLE_ANCS_C_EVT_NOTIF_ATTRIBUTE:
+            m_notif_attr_latest = p_evt->attr;
+            notif_attr_print(&m_notif_attr_latest);
+            if (p_evt->attr.attr_id == BLE_ANCS_NOTIF_ATTR_ID_APP_IDENTIFIER)
+            {
+                m_notif_attr_app_id_latest = p_evt->attr;
+            }
+            break;
+        case BLE_ANCS_C_EVT_DISCOVERY_FAILED:
+            NRF_LOG_DEBUG("Apple Notification Center Service not discovered on the server.");
+            break;
+
+        case BLE_ANCS_C_EVT_APP_ATTRIBUTE:
+            app_attr_print(&p_evt->attr);
+            break;
+        case BLE_ANCS_C_EVT_NP_ERROR:
+            err_code_print(p_evt->err_code_np);
+            break;
+        default:
+            // No implementation needed.
+            break;
+    }
+}
+
+
+/**@brief Function for handling the Apple Notification Service client errors.
+ *
+ * @param[in] nrf_error  Error code containing information about what went wrong.
+ */
+static void apple_notification_error_handler(uint32_t nrf_error)
+{
+    APP_ERROR_HANDLER(nrf_error);
+}
+
+
+
+/**@snippet [Handling the data received over BLE] */
+static void ancs_services_init(void)
+{
+    ret_code_t             ret;
+    ble_ancs_c_init_t      ancs_c_init;
+    nrf_ble_gatts_c_init_t gatts_c_init;
+
+
+
+    // Init the GATTS client module.
+    memset(&gatts_c_init, 0, sizeof(gatts_c_init));
+
+    gatts_c_init.evt_handler = gatts_c_evt_handler;
+
+    ret = nrf_ble_gatts_c_init(&m_gatts_c, &gatts_c_init);
+    APP_ERROR_CHECK(ret);
+
+    // Init the Apple Notification Center Service client module.
+    memset(&ancs_c_init, 0, sizeof(ancs_c_init));
+
+    ret = nrf_ble_ancs_c_attr_add(&m_ancs_c,
+                                  BLE_ANCS_NOTIF_ATTR_ID_APP_IDENTIFIER,
+                                  m_attr_appid,
+                                  ATTR_DATA_SIZE);
+    APP_ERROR_CHECK(ret);
+
+    ret = nrf_ble_ancs_c_app_attr_add(&m_ancs_c,
+                                      BLE_ANCS_APP_ATTR_ID_DISPLAY_NAME,
+                                      m_attr_disp_name,
+                                      sizeof(m_attr_disp_name));
+    APP_ERROR_CHECK(ret);
+
+    ret = nrf_ble_ancs_c_attr_add(&m_ancs_c,
+                                  BLE_ANCS_NOTIF_ATTR_ID_TITLE,
+                                  m_attr_title,
+                                  ATTR_DATA_SIZE);
+    APP_ERROR_CHECK(ret);
+
+    ret = nrf_ble_ancs_c_attr_add(&m_ancs_c,
+                                  BLE_ANCS_NOTIF_ATTR_ID_MESSAGE,
+                                  m_attr_message,
+                                  ATTR_DATA_SIZE);
+    APP_ERROR_CHECK(ret);
+
+    ret = nrf_ble_ancs_c_attr_add(&m_ancs_c,
+                                  BLE_ANCS_NOTIF_ATTR_ID_SUBTITLE,
+                                  m_attr_subtitle,
+                                  ATTR_DATA_SIZE);
+    APP_ERROR_CHECK(ret);
+
+    ret = nrf_ble_ancs_c_attr_add(&m_ancs_c,
+                                  BLE_ANCS_NOTIF_ATTR_ID_MESSAGE_SIZE,
+                                  m_attr_message_size,
+                                  ATTR_DATA_SIZE);
+    APP_ERROR_CHECK(ret);
+
+    ret = nrf_ble_ancs_c_attr_add(&m_ancs_c,
+                                  BLE_ANCS_NOTIF_ATTR_ID_DATE,
+                                  m_attr_date,
+                                  ATTR_DATA_SIZE);
+    APP_ERROR_CHECK(ret);
+
+    ret = nrf_ble_ancs_c_attr_add(&m_ancs_c,
+                                  BLE_ANCS_NOTIF_ATTR_ID_POSITIVE_ACTION_LABEL,
+                                  m_attr_posaction,
+                                  ATTR_DATA_SIZE);
+    APP_ERROR_CHECK(ret);
+
+    ret = nrf_ble_ancs_c_attr_add(&m_ancs_c,
+                                  BLE_ANCS_NOTIF_ATTR_ID_NEGATIVE_ACTION_LABEL,
+                                  m_attr_negaction,
+                                  ATTR_DATA_SIZE);
+    APP_ERROR_CHECK(ret);
+
+    ancs_c_init.evt_handler   = ancs_c_evt_handler;
+    ancs_c_init.error_handler = apple_notification_error_handler;
+
+    ret = ble_ancs_c_init(&m_ancs_c, &ancs_c_init);
+    APP_ERROR_CHECK(ret);
+}
 
 /**@brief Function for initializing services that will be used by the application.
  */
@@ -668,7 +1071,7 @@ static void services_init(void)
 
     err_code = ble_dfu_buttonless_init(&dfus_init);
     APP_ERROR_CHECK(err_code);
-        
+    ancs_services_init();
         
 }
 
@@ -720,7 +1123,7 @@ static void conn_params_init(void)
     cp_init.next_conn_params_update_delay  = NEXT_CONN_PARAMS_UPDATE_DELAY;
     cp_init.max_conn_params_update_count   = MAX_CONN_PARAMS_UPDATE_COUNT;
     cp_init.start_on_notify_cccd_handle    = BLE_GATT_HANDLE_INVALID;
-    cp_init.disconnect_on_fail             = false;
+    cp_init.disconnect_on_fail             = true;
     cp_init.evt_handler                    = on_conn_params_evt;
     cp_init.error_handler                  = conn_params_error_handler;
 
@@ -751,7 +1154,7 @@ static void sleep_mode_enter(void)
  */
 static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
 {
-
+    ret_code_t ret;
 
     switch (ble_adv_evt)
     {
@@ -760,6 +1163,29 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
         case BLE_ADV_EVT_IDLE:
             //sleep_mode_enter();
             break;
+        case BLE_ADV_EVT_WHITELIST_REQUEST:
+        {
+            ble_gap_addr_t whitelist_addrs[BLE_GAP_WHITELIST_ADDR_MAX_COUNT];
+            ble_gap_irk_t  whitelist_irks[BLE_GAP_WHITELIST_ADDR_MAX_COUNT];
+            uint32_t       addr_cnt = BLE_GAP_WHITELIST_ADDR_MAX_COUNT;
+            uint32_t       irk_cnt  = BLE_GAP_WHITELIST_ADDR_MAX_COUNT;
+
+            ret = pm_whitelist_get(whitelist_addrs, &addr_cnt, whitelist_irks, &irk_cnt);
+            APP_ERROR_CHECK(ret);
+            NRF_LOG_DEBUG("pm_whitelist_get returns %d addr in whitelist and %d irk whitelist",
+                           addr_cnt,
+                           irk_cnt);
+
+            // Apply the whitelist.
+            ret = ble_advertising_whitelist_reply(&m_advertising,
+                                                  whitelist_addrs,
+                                                  addr_cnt,
+                                                  whitelist_irks,
+                                                  irk_cnt);
+            APP_ERROR_CHECK(ret);
+        }
+        break;
+        
         default:
             break;
     }
@@ -774,7 +1200,7 @@ static void on_adv_evt(ble_adv_evt_t ble_adv_evt)
 static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
 {
     uint32_t err_code;
-        ret_code_t           ret;
+
 
     switch (p_ble_evt->header.evt_id)
     {
@@ -788,8 +1214,8 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
             APP_ERROR_CHECK(err_code);
                         
-            // err_code = app_timer_start(m_sec_req_timer_id, SECURITY_REQUEST_DELAY, NULL);
-            // APP_ERROR_CHECK(err_code);
+//            err_code = app_timer_start(m_sec_req_timer_id, SECURITY_REQUEST_DELAY, NULL);
+//            APP_ERROR_CHECK(err_code);
                         
             break;
 
@@ -1015,7 +1441,7 @@ void uart_event_handle(app_uart_evt_t * p_event)
 /**@brief  Function for initializing the UART module.
  */
 /**@snippet [UART Initialization] */
-static void uart_init(void)
+void uart_init(void)
 {
     uint32_t                     err_code;
     app_uart_comm_params_t const comm_params =
@@ -1054,12 +1480,13 @@ void advertising_init(void)
     memset(&init, 0, sizeof(init));
 
     init.advdata.name_type          = BLE_ADVDATA_FULL_NAME;
-    init.advdata.include_appearance = false;
+    init.advdata.include_appearance = true;
     init.advdata.flags              = BLE_GAP_ADV_FLAGS_LE_ONLY_GENERAL_DISC_MODE;
 
     init.srdata.uuids_complete.uuid_cnt = sizeof(m_adv_uuids) / sizeof(m_adv_uuids[0]);
     init.srdata.uuids_complete.p_uuids  = m_adv_uuids;
 
+    init.config.ble_adv_whitelist_enabled = true;
     init.config.ble_adv_fast_enabled  = true;
     init.config.ble_adv_fast_interval = APP_ADV_INTERVAL;
     init.config.ble_adv_fast_timeout  = APP_ADV_DURATION;
@@ -1073,14 +1500,14 @@ void advertising_init(void)
 
 void ModifyBleName(void)
 {
-    uint32_t               err_code;
+
     ble_gap_conn_sec_mode_t sec_mode;
 
     sd_ble_gap_adv_stop(m_advertising.adv_handle);
 	
     BLE_GAP_CONN_SEC_MODE_SET_OPEN(&sec_mode);
 
-    err_code = sd_ble_gap_device_name_set(&sec_mode,
+    sd_ble_gap_device_name_set(&sec_mode,
                                           (const uint8_t *) DEVICE_NAME,
                                           strlen(DEVICE_NAME));
     advertising_init();
@@ -1180,6 +1607,28 @@ void BleMacRead(uint8_t *addr)
     memcpy(addr, bleMac.addr, 6);
 }
 
+/**@brief Function for handling Database Discovery events.
+ *
+ * @details This function is a callback function to handle events from the database discovery module.
+ *          Depending on the UUIDs that are discovered, this function should forward the events
+ *          to their respective service instances.
+ *
+ * @param[in] p_event  Pointer to the database discovery event.
+ */
+static void db_disc_handler(ble_db_discovery_evt_t * p_evt)
+{
+    ble_ancs_c_on_db_disc_evt(&m_ancs_c, p_evt);
+    nrf_ble_gatts_c_on_db_disc_evt(&m_gatts_c, p_evt);
+}
+
+/**@brief Function for initializing the database discovery module.
+ */
+static void db_discovery_init(void)
+{
+    ret_code_t ret = ble_db_discovery_init(db_disc_handler);
+    APP_ERROR_CHECK(ret);
+}
+
 /**@brief Application main function.
  */
 int main(void)
@@ -1204,6 +1653,7 @@ int main(void)
     ble_stack_init();
     gap_params_init();
     gatt_init();
+    db_discovery_init();
     services_init();
     advertising_init();
     err_code=sd_ble_gap_tx_power_set(BLE_GAP_TX_POWER_ROLE_ADV,m_advertising.adv_handle,+4);
@@ -1218,7 +1668,7 @@ int main(void)
     printf("\r\nUART started.\r\n");
 #endif
     NRF_LOG_INFO("Debug logging for UART over RTT started.");
-    // advertising_start(true);
+    // advertising_start(false);
 
 
     // Enter main loop.

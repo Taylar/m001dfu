@@ -134,8 +134,10 @@ void  M001_AppInit(void)
 	DailyDataSaveInit();
 	DailySportInit();
 	// DataManageTest();
-    //SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 125, 125, 3);
-
+    // SetSinglePort(MOTO, LED_PORT_ACTIVE_STATE, 125, 125, 1);
+	SinglePortSetPolar(MOTO, MOTO_PORT_ACTIVE_STATE);
+	nrf_delay_ms(125);
+	SinglePortSetPolar(MOTO, !MOTO_PORT_ACTIVE_STATE);
 }
 
 

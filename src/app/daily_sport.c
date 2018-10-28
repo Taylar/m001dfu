@@ -4,6 +4,7 @@ uint32_t dailyTotalStep;
 uint32_t dailyStepSave;
 uint32_t dailyStepAim;
 uint16_t dailyStepComplete;
+uint8_t  dailyStepCompleteFlag;
 
 
 
@@ -19,6 +20,7 @@ void DailySportInit(void)
     dailyTotalStep          = 0;
     dailyStepSave           = 0;
     dailyStepComplete       = 0;
+    dailyStepCompleteFlag 	= 0;
     dailyStepAim            = 10000;
 }
 
@@ -26,6 +28,7 @@ void DailySportClear(void)
 {
     dailyTotalStep          = 0;
     dailyStepComplete       = 0;
+    dailyStepCompleteFlag 	= 0;
 }
 
 
@@ -72,7 +75,18 @@ void DailyStepProcess(void)
 
                 dailyStepComplete   = (uint16_t)(dailyTotalStep * 100 / dailyStepAim);
                 if(dailyStepComplete > 100)
-                dailyStepComplete = 100;
+                {
+	                dailyStepComplete = 100;
+
+	            	if(dailyStepCompleteFlag == 0)
+	            	{
+	            		dailyStepCompleteFlag = 1;
+	            		sportModeTime = 1;
+						DisplaySportComplete(dailyStepComplete);
+	            		SetSinglePort(MOTO, MOTO_PORT_ACTIVE_STATE, 150, 850, 5);
+	            		SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 150, 850, 5);
+	            	}
+                }
 				
 				if(phoneState == PHONE_STATE_DAILY_SPORT)
 				{
