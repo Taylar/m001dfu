@@ -37,10 +37,10 @@ static unsigned int CompareData =0;
 static unsigned int MaxAcceleration =0, MinAcceleration =0;
 static unsigned char InvalidTime =0;
 
-#define StepUp1                     100//125
-#define StepUp2                     55//55
-#define StepDown1                   95//115
-#define StepDown2                   45//45
+#define StepUp1                     95//125
+#define StepUp2                     45//55
+#define StepDown1                   85//115
+#define StepDown2                   40//45
 
 
 
@@ -66,8 +66,8 @@ int CalculateStep(unsigned char xyzDataTemp[3])
     static unsigned char timecount = 0;
 
     xyzData[0] = xyzDataTemp[0];
-	xyzData[1] = xyzDataTemp[1];
-	xyzData[2] = xyzDataTemp[2];
+	xyzData[1] = xyzDataTemp[2];
+	xyzData[2] = xyzDataTemp[1];
     
     //Lis3dh_Read_xyz(xyzData);
     if(xyzData[0] & 0x80){xyzData[0] = ~xyzData[0] + 1; }

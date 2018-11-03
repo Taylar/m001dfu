@@ -70,10 +70,13 @@
 // ************************rtt**********************************
 
 
+#define 	UserDubug     NRF_LOG_INFO
+// #define 	UserDubug(...)
+
 #define		SYS_APP_HANDLE_NUM  1
 
 // ************************version**********************************
-#define		FW_VERSION			0X0017
+#define		FW_VERSION			0X0019
 #define		BLE_PRO_VER			0X0001
 
 

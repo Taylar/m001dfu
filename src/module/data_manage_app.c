@@ -1260,6 +1260,8 @@ uint16_t StorageDataRecover(void)
 					dataClassifyInfo[i].dataWritableStartAddr	= dataClassifyInfo[i].dataAreaStartAddr;
 
 				dataClassifyInfo[i].dataWritableLength		= 0;
+
+				DataSaveEnd(i);
 			}
 		}
 	}

@@ -163,7 +163,6 @@ uint16_t DailyDataRequestTotalInfoAck(uint32_t dataClassify)
 
 	result = dataManage.DataInfoRead(&catalogNum, &byteLen, dataClassify);
 	
-
 	if(result == 0xff)
 	{
 		return result;

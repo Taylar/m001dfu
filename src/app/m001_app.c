@@ -213,7 +213,7 @@ void M001_3Hlongkey(void)
 			accel.bsp->BspInterfaceEnable();
 			bspAccel.SampleSet();
 			accel.bsp->BspInterfaceDisable();
-			advertising_start(true);
+			advertising_start(false);
 		}
 	}
 	else if(sysMode == SYS_WORK_MODE)
@@ -307,8 +307,8 @@ void M001_KeyApp(uint32_t keyEvent)
 	if(DAILYAPP_MSG_HOUR_ISR & keyEvent)
 	{
 
-		DailyStepSave((rtcApp.Read_Cur_Utc()/3600-1)*3600, DailyStepSaveRead());
-		NRF_LOG_INFO("1hour:utc:%d,step:%d\n", (rtcApp.Read_Cur_Utc()/3600-1)*3600, DailyStepSaveRead());
+		DailyStepSave((rtcApp.Read_GMT_Utc()/3600-1)*3600, DailyStepSaveRead());
+		NRF_LOG_INFO("1hour:utc:%d,step:%d\n", (rtcApp.Read_GMT_Utc()/3600-1)*3600, DailyStepSaveRead());
 		DailyStepSaveClear();
 	}
 
