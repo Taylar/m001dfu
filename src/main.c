@@ -373,23 +373,23 @@ void advertising_start(bool erase_bonds)
     }
     else
     {
-            ret_code_t ret;
+        //     ret_code_t ret;
 
-        memset(m_whitelist_peers, PM_PEER_ID_INVALID, sizeof(m_whitelist_peers));
-        m_whitelist_peer_cnt = (sizeof(m_whitelist_peers) / sizeof(pm_peer_id_t));
+        // memset(m_whitelist_peers, PM_PEER_ID_INVALID, sizeof(m_whitelist_peers));
+        // m_whitelist_peer_cnt = (sizeof(m_whitelist_peers) / sizeof(pm_peer_id_t));
 
-        peer_list_get(m_whitelist_peers, &m_whitelist_peer_cnt);
+        // peer_list_get(m_whitelist_peers, &m_whitelist_peer_cnt);
 
-        ret = pm_whitelist_set(m_whitelist_peers, m_whitelist_peer_cnt);
-        APP_ERROR_CHECK(ret);
+        // ret = pm_whitelist_set(m_whitelist_peers, m_whitelist_peer_cnt);
+        // APP_ERROR_CHECK(ret);
 
-        // Setup the device identies list.
-        // Some SoftDevices do not support this feature.
-        ret = pm_device_identities_list_set(m_whitelist_peers, m_whitelist_peer_cnt);
-        if (ret != NRF_ERROR_NOT_SUPPORTED)
-        {
-            APP_ERROR_CHECK(ret);
-        }
+        // // Setup the device identies list.
+        // // Some SoftDevices do not support this feature.
+        // ret = pm_device_identities_list_set(m_whitelist_peers, m_whitelist_peer_cnt);
+        // if (ret != NRF_ERROR_NOT_SUPPORTED)
+        // {
+        //     APP_ERROR_CHECK(ret);
+        // }
                 
         uint32_t err_code = ble_advertising_start(&m_advertising, BLE_ADV_MODE_FAST);
         APP_ERROR_CHECK(err_code);

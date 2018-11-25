@@ -65,7 +65,7 @@ void DailyDataSaveInit(void)
 	dataManage.StorageDataRecover();
 }
 
-// 函数功能:	每整5分钟调用一次，自动判定是否需要存储
+// 函数功能:	每整60分钟调用一次，自动判定是否需要存储
 // 输入参数：	utc:	开始的UTC时间
 // 				step:	该时间段内的计步数据。连续1小时（12小包）没有数据时不会进行存储。
 // 返回参数：	无
@@ -107,11 +107,12 @@ void DailyStepSave(uint32_t utc, uint16_t step)
 			catalogInfoTemp.utc				= utc;
 			catalogInfoTemp.dataClassify	= STEPDATA_CLASSIFY;
 			catalogInfoTemp.sampleUnit		= DATASAMPLE_UNIT_10S;
-			catalogInfoTemp.sampleInterval	= 30;
+			catalogInfoTemp.sampleInterval	= 360;
 			catalogInfoTemp.unitLength		= DAILY_STEP_BYTE_LEN;
 			dataManage.CreateCatalog(&catalogInfoTemp);
 
-			dailyStepSaveState				= DATA_SAVE_SAVING;	
+			dailyStepSaveState				= DATA_SAVE_SAVING;
+			dailySteppacketCnt 				= 0;
 		}
 
 		stepDataTemp[dailySteppacketCnt]	= step;

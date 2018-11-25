@@ -213,7 +213,7 @@ void M001_3Hlongkey(void)
 			accel.bsp->BspInterfaceEnable();
 			bspAccel.SampleSet();
 			accel.bsp->BspInterfaceDisable();
-			advertising_start(false);
+			advertising_start(true);
 		}
 	}
 	else if(sysMode == SYS_WORK_MODE)
