@@ -723,65 +723,65 @@ uint16_t ClassifyDataInfoRead(uint16_t *catalogTotal, uint32_t *dataLength, uint
 		if((catalogTemp.u.dataClassify == dataClassify) && (catalogTemp.u.dataLength != 0x00) && (catalogTemp.u.dataLength != 0xffffffff))
 		{
 
-			// 判断该目录存放数据的地址是否在有效的数据范围内
-			dataValidStartAddrTemp		= catalogTemp.u.startAddr;
-			dataValidEndAddrTemp		= dataValidStartAddrTemp + catalogTemp.u.dataLength;
+//			// 判断该目录存放数据的地址是否在有效的数据范围内
+//			dataValidStartAddrTemp		= catalogTemp.u.startAddr;
+//			dataValidEndAddrTemp		= dataValidStartAddrTemp + catalogTemp.u.dataLength;
 
-			// 数据已进行循环存储
-			if(dataValidEndAddrTemp > dataClassifyInfo[dataClassify].dataAreaEndAddr)
-				dataValidEndAddrTemp	= dataValidEndAddrTemp - dataClassifyInfo[dataClassify].dataAreaEndAddr - 1
-											+ dataClassifyInfo[dataClassify].dataAreaStartAddr;
-			
+//			// 数据已进行循环存储
+//			if(dataValidEndAddrTemp > dataClassifyInfo[dataClassify].dataAreaEndAddr)
+//				dataValidEndAddrTemp	= dataValidEndAddrTemp - dataClassifyInfo[dataClassify].dataAreaEndAddr - 1
+//											+ dataClassifyInfo[dataClassify].dataAreaStartAddr;
+//			
 
-			// 写0该目录
-			extflashMsg.startAddr	= readAddrTemp;
-			extflashMsg.length		= CATALOG_INFO_LENGTH;
-			extflashMsg.endAddr		= extflashMsg.startAddr + extflashMsg.length - 1;
-			extflashMsg.id			= EXTFLASH_MSG_WRITE;
-			extflashMsg.dataAddr	= (uint8_t *)(catalogWrite0Data.databuf);
-			extflashMsg.Cb			= NULL;
+//			// 写0该目录
+//			extflashMsg.startAddr	= readAddrTemp;
+//			extflashMsg.length		= CATALOG_INFO_LENGTH;
+//			extflashMsg.endAddr		= extflashMsg.startAddr + extflashMsg.length - 1;
+//			extflashMsg.id			= EXTFLASH_MSG_WRITE;
+//			extflashMsg.dataAddr	= (uint8_t *)(catalogWrite0Data.databuf);
+//			extflashMsg.Cb			= NULL;
 
-			// 有效数据是否正向
-			if(dataClassifyInfo[dataClassify].dataValidEndAddr >= dataClassifyInfo[dataClassify].dataValidStartAddr)
-			{
-				// 是否在有效数据范围外
-				if((dataValidStartAddrTemp < dataClassifyInfo[dataClassify].dataValidStartAddr) ||
-					(dataValidStartAddrTemp >= dataClassifyInfo[dataClassify].dataValidEndAddr) ||
-					(dataValidEndAddrTemp < dataClassifyInfo[dataClassify].dataValidStartAddr) ||
-					(dataValidEndAddrTemp >= dataClassifyInfo[dataClassify].dataValidEndAddr))
-				{
-					extflash.Write(&extflashMsg);
-					if(readAddrTemp == dataClassifyInfo[dataClassify].catalogValidStartAddr)
-					{
-						// 更新目录有效地址开始地址
-						dataClassifyInfo[dataClassify].catalogValidStartAddr		+= CATALOG_INFO_LENGTH;
-						if(dataClassifyInfo[dataClassify].catalogValidStartAddr > dataClassifyInfo[dataClassify].catalogAreaEndAddr)
-						{
-							dataClassifyInfo[dataClassify].catalogValidStartAddr	= dataClassifyInfo[dataClassify].catalogAreaStartAddr;
-						}
-					}
-				}
-			}
-			else
-			{
-				// 是否在有效数据范围外
-				if(!((dataValidStartAddrTemp < dataClassifyInfo[dataClassify].dataValidEndAddr) ||
-					(dataValidStartAddrTemp >= dataClassifyInfo[dataClassify].dataValidStartAddr) ||
-					(dataValidEndAddrTemp < dataClassifyInfo[dataClassify].dataValidEndAddr) ||
-					(dataValidEndAddrTemp >= dataClassifyInfo[dataClassify].dataValidStartAddr)))
-				{
-					extflash.Write(&extflashMsg);
-					if(readAddrTemp == dataClassifyInfo[dataClassify].catalogValidStartAddr)
-					{
-						// 更新目录有效地址开始地址
-						dataClassifyInfo[dataClassify].catalogValidStartAddr		+= CATALOG_INFO_LENGTH;
-						if(dataClassifyInfo[dataClassify].catalogValidStartAddr > dataClassifyInfo[dataClassify].catalogAreaEndAddr)
-						{
-							dataClassifyInfo[dataClassify].catalogValidStartAddr	= dataClassifyInfo[dataClassify].catalogAreaStartAddr;
-						}
-					}
-				}
-			}
+//			// 有效数据是否正向
+//			if(dataClassifyInfo[dataClassify].dataValidEndAddr >= dataClassifyInfo[dataClassify].dataValidStartAddr)
+//			{
+//				// 是否在有效数据范围外
+//				if((dataValidStartAddrTemp < dataClassifyInfo[dataClassify].dataValidStartAddr) ||
+//					(dataValidStartAddrTemp >= dataClassifyInfo[dataClassify].dataValidEndAddr) ||
+//					(dataValidEndAddrTemp <= dataClassifyInfo[dataClassify].dataValidStartAddr) ||
+//					(dataValidEndAddrTemp > dataClassifyInfo[dataClassify].dataValidEndAddr))
+//				{
+//					extflash.Write(&extflashMsg);
+//					if(readAddrTemp == dataClassifyInfo[dataClassify].catalogValidStartAddr)
+//					{
+//						// 更新目录有效地址开始地址
+//						dataClassifyInfo[dataClassify].catalogValidStartAddr		+= CATALOG_INFO_LENGTH;
+//						if(dataClassifyInfo[dataClassify].catalogValidStartAddr > dataClassifyInfo[dataClassify].catalogAreaEndAddr)
+//						{
+//							dataClassifyInfo[dataClassify].catalogValidStartAddr	= dataClassifyInfo[dataClassify].catalogAreaStartAddr;
+//						}
+//					}
+//				}
+//			}
+//			else
+//			{
+//				// 是否在有效数据范围外
+//				if(!((dataValidStartAddrTemp < dataClassifyInfo[dataClassify].dataValidEndAddr) ||
+//					(dataValidStartAddrTemp >= dataClassifyInfo[dataClassify].dataValidStartAddr) ||
+//					(dataValidEndAddrTemp <= dataClassifyInfo[dataClassify].dataValidEndAddr) ||
+//					(dataValidEndAddrTemp > dataClassifyInfo[dataClassify].dataValidStartAddr)))
+//				{
+//					extflash.Write(&extflashMsg);
+//					if(readAddrTemp == dataClassifyInfo[dataClassify].catalogValidStartAddr)
+//					{
+//						// 更新目录有效地址开始地址
+//						dataClassifyInfo[dataClassify].catalogValidStartAddr		+= CATALOG_INFO_LENGTH;
+//						if(dataClassifyInfo[dataClassify].catalogValidStartAddr > dataClassifyInfo[dataClassify].catalogAreaEndAddr)
+//						{
+//							dataClassifyInfo[dataClassify].catalogValidStartAddr	= dataClassifyInfo[dataClassify].catalogAreaStartAddr;
+//						}
+//					}
+//				}
+//			}
 
 			
 			catalogTotalInfo.catalogInfo[catalogTotalNumTemp]	= catalogTemp.u;

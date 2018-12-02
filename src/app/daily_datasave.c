@@ -96,6 +96,8 @@ void DailyStepSave(uint32_t utc, uint16_t step)
 			if(DAILY_STEP_PACKET_MAX == dailySteppacketCnt)
 			{
 				dataManage.DataSave((uint8_t*)stepDataTemp, DAILY_STEP_BYTE_LEN * dailySteppacketCnt, STEPDATA_CLASSIFY);
+				dataManage.DataSaveEnd(STEPDATA_CLASSIFY);
+				dailyStepSaveState			= DATA_SAVE_IDLE;
 				dailySteppacketCnt			= 0;
 			}
 		}
