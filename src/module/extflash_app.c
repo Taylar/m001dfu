@@ -198,6 +198,26 @@ void ExtflashReadBleBrocastName(extflash_task_msg_t *msg)
 	bspExtflash.Sleep();
 }
 
+void ExtflashWriteSysConfig(extflash_task_msg_t *msg)
+{
+	bspExtflash.WakeUp();
+	bspExtflash.Erase4KCmd(SYS_CONFIG_START_ADD);
+	msg->result |= IdleWait(EXTFLASH_ERASE_IDELTICKS);
+	bspExtflash.WriteCmd(msg->dataAddr, SYS_CONFIG_START_ADD, msg->length);
+	msg->result |= IdleWait(EXTFLASH_READ_WRITE_IDELTICKS);
+	bspExtflash.Sleep();
+}
+
+
+void ExtflashReadSysConfig(extflash_task_msg_t *msg)
+{
+	bspExtflash.WakeUp();
+	msg->result |= IdleWait(EXTFLASH_READ_WRITE_IDELTICKS);
+	bspExtflash.ReadCmd(msg->dataAddr, SYS_CONFIG_START_ADD, msg->length);
+	msg->result |= IdleWait(EXTFLASH_READ_WRITE_IDELTICKS);
+	bspExtflash.Sleep();
+}
+
 
 void ExtflashReadMac(extflash_task_msg_t *msg)
 {

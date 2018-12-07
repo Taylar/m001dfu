@@ -1,15 +1,6 @@
 #ifndef		DATA_MANAGE_APP_H
 #define		DATA_MANAGE_APP_H
 
-// 外部flash存储空间分配
-// 目录区域分配
-#define		DM_APP_CATALOG_AREA_START_ADD			0x00000
-#define		DM_APP_CATALOG_AREA_LENGTH				0x4000
-
-// 数据区域分配
-#define		DM_APP_DATA_AREA_START_ADD				(DM_APP_CATALOG_AREA_START_ADD + DM_APP_CATALOG_AREA_LENGTH)
-#define		DM_APP_DATA_AREA_LENGTH					0xA000
-
 
 // 数据最小片区长度，一次性写入的最大字节数据，超过会报错
 #define		DM_APP_SECTOR_LENGTH					4096

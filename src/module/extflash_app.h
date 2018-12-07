@@ -85,6 +85,10 @@ void ExtflashWriteBleMac(extflash_task_msg_t *msg);
 
 void ExtflashReadBleMac(extflash_task_msg_t *msg);
 
+void ExtflashWriteSysConfig(extflash_task_msg_t *msg);
+
+void ExtflashReadSysConfig(extflash_task_msg_t *msg);
+
 void ExtflashReadMac(extflash_task_msg_t *msg);
 
 void ExtflashSleep(void);
@@ -100,5 +104,26 @@ void ExtflashWriteWithBuf(extflash_task_msg_t *msg);
 void ExtflashRead(extflash_task_msg_t *msg);
 
 void ExtflashAppInit(void);
+
+
+// **************************************************************************
+// **********************外部flash分配***************************************
+// **************************************************************************
+
+// 数据区域分配
+// 外部flash存储空间分配
+// 目录区域分配
+#define		DM_APP_CATALOG_AREA_START_ADD			0x00000
+#define		DM_APP_CATALOG_AREA_LENGTH				0x4000
+
+// 数据区域分配
+#define		DM_APP_DATA_AREA_START_ADD				(DM_APP_CATALOG_AREA_START_ADD + DM_APP_CATALOG_AREA_LENGTH)
+#define		DM_APP_DATA_AREA_LENGTH					0xA000
+
+
+// 用户数据分配
+
+#define 	SYS_CONFIG_START_ADD					0Xf000
+
 
 #endif		//	EXTFLASH_APP_H

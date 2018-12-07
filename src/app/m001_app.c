@@ -416,3 +416,92 @@ uint16_t ExchangeTimeforCount(uint8_t Hour, uint8_t Min, uint8_t Sec)
     z += Sec ;
     return z;
 }
+
+uint8_t CheckCode8(uint8_t *pData,  uint16_t length)
+{
+    uint8_t cc = 0;
+
+    while (length) {
+        cc ^= *pData;
+        pData++;
+        length--;
+    }
+
+    return cc;	
+}
+
+uint8_t SysConfigLoad(void)
+{
+	extflash_task_msg_t msgFlash;
+	uint16_t check;
+
+
+	msgFlash.dataAddr = (uint8_t*)(&sysConfig);
+	msgFlash.length = sizeof(sysConfig_t);
+	ExtflashReadSysConfig(&msgFlash);
+	check = CheckCode8(sysConfig.movtLevelA, sysConfig.length);
+	if(check == sysConfig.checkCode)
+		return 0;
+	else
+		return 0xff;
+}
+
+
+void SysConfigStore(void)
+{
+	extflash_task_msg_t msgFlash;
+	uint16_t check;
+
+
+	msgFlash.dataAddr   = (uint8_t*)(&sysConfig);
+	msgFlash.length     = sizeof(sysConfig_t);
+	sysConfig.length    = sizeof(sysConfig_t) - 8;
+	sysConfig.checkCode = CheckCode8(sysConfig.movtLevelA, sysConfig.length);
+	ExtflashWriteSysConfig(&msgFlash);
+}
+
+void SysConfigReset(void)
+{
+	sysConfig.fwVersion = CONFIG_VER;
+	sysConfig.length = sizeof(sysConfig_t) - 8;
+	sysConfig.movtLevelA[0] = 0;
+	sysConfig.movtLevelB[0] = 0;
+	sysConfig.movtCurPos[0] = 0;
+	sysConfig.totalStep = 0;
+	sysConfig.aimStep = 10000;
+	sysConfig.sysMode = SYS_POWEROFF_MODE;
+	sysConfig.appMode = APP_NORMAL_MODE;
+	sysConfig.bleMode = BLE_SLEEP_MODE;
+	memcpy((char*)sysConfig.brocastName, (char*)m001BraodcastName, 16);
+	RtcTimeRead(&sysConfig.time)
+	sysConfig.checkCode = CheckCode8(sysConfig.movtLevelA, sysConfig.length);
+}
+
+void UpgradePreProcess(void)
+{
+	bleMode       = BLE_BROADCAST_MODE;
+	sysMode       = SYS_WORK_MODE;
+	phoneState    = APP_NORMAL_MODE;
+	appMode       = APP_NORMAL_MODE;
+	
+	sportModeTime = 0;
+
+		uint32_t dailyTotalStep;
+		uint32_t dailyStepSave;
+		uint32_t dailyStepAim;
+		uint16_t dailyStepComplete;
+
+
+	sysConfig.fwVersion = CONFIG_VER;
+	sysConfig.length = sizeof(sysConfig_t) - 8;
+	sysConfig.movtLevelA[0] = 0;
+	sysConfig.movtLevelB[0] = 0;
+	sysConfig.movtCurPos[0] = GetMovtCurPos();
+	sysConfig.totalStep = 0;
+	sysConfig.aimStep = ;
+	sysConfig.sysMode = SYS_WORK_MODE;
+	sysConfig.appMode = APP_NORMAL_MODE;
+	sysConfig.bleMode = BLE_BROADCAST_MODE;
+	memcpy((char*)sysConfig.brocastName, (char*)m001BraodcastName, 16);
+	sysConfig.checkCode = CheckCode8(sysConfig.movtLevelA, sysConfig.length);
+}

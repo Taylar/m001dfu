@@ -90,4 +90,28 @@ typedef enum
 } sys_app_handle_t;
 
 
+#define CONFIG_VER		0
+#define MOVT_NUM		1
+
+#pragma pack (1)
+typedef struct 
+{
+	uint32_t 	fwVersion;
+	uint16_t	length;
+	uint16_t	checkCode;
+	uint8_t		movtLevelA[MOVT_NUM];
+	uint8_t		movtLevelB[MOVT_NUM];
+	uint32_t	movtCurPos[MOVT_NUM];
+	uint32_t	totalStep;
+	uint32_t	aimStep;
+	uint16_t	sysMode;
+    uint16_t	appMode;
+    uint16_t	bleMode;
+	uint8_t		brocastName[16];
+	rtc_time_s  time;
+}sysConfig_t;
+#pragma pack ()
+
+extern sysConfig_t sysConfig;
+
 #endif	// GENERAL_H_
