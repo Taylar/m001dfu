@@ -20,7 +20,7 @@
 #define         MOVE_M_CLOCK_REVERSE_MAX            10800
 #define         MOVE_M_CLOCK_MAX_RANGE              43200
 
-
+APP_TIMER_DEF(movt_M_Tmr);
 
 movt_att_s  movtConfig[MOVT_MAX_NUM];
 
@@ -62,13 +62,12 @@ void ClockMResverseFinishCbInit(func *cb)
 
 void BspMovtNormalTimerStart(uint32_t time_us)
 {
-	bsp_movt_timer_set(time_us);
-	bsp_movt_timer_start();
+    app_timer_start(movt_M_Tmr, time_us / 31 +1, NULL);
 }
 
 void BspMovtNormalTimerStop(void)
 {
-	bsp_movt_timer_stop();
+    app_timer_stop(movt_M_Tmr);
 }
 
 
@@ -305,20 +304,11 @@ uint16_t BspMovtRunDiretion(movt_att_s *movtCompare)
 }
 
 
-void timer_movt_event_handler(nrf_timer_event_t event_type, void* p_context)
+void timer_movt_event_handler(void * p_context)
 {
-
-    switch (event_type)
-    {
-        case NRF_TIMER_EVENT_COMPARE0:
-            BspMovtNorTimerIsr();
-            break;
-
-        default:
-            //Do nothing.
-            break;
-    }
+    BspMovtNorTimerIsr();
 }
+
 
 
 void BspMovtInit(void)
@@ -327,8 +317,10 @@ void BspMovtInit(void)
 	
 	bsp_board_movts_init();
 
-	bsp_movt_timer_init(timer_movt_event_handler);
 
+	app_timer_create(&movt_M_Tmr,
+                                APP_TIMER_MODE_SINGLE_SHOT,
+                                timer_movt_event_handler);
 
 
 	movtConfig[MOVT_M_CLOCK].currentPosition    = 0;

@@ -220,7 +220,7 @@ uint32_t bsp_board_movt_idx_to_pin(uint32_t movt_idx);
 
 uint32_t bsp_board_pin_to_movt_idx(uint32_t pin_number);
 
-void bsp_movt_timer_init(nrfx_timer_event_handler_t timeCb);
+void bsp_movt_timer_init(nrfx_rtc_handler_t timeCb);
 
 void bsp_movt_timer_start(void);
 

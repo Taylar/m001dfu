@@ -76,7 +76,7 @@
 #define		SYS_APP_HANDLE_NUM  1
 
 // ************************version**********************************
-#define		FW_VERSION			0X0023
+#define		FW_VERSION			0X0024
 #define		BLE_PRO_VER			0X0001
 
 
