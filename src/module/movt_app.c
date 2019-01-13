@@ -230,3 +230,20 @@ uint16_t GetMovtAimPos(void)
 {
 	return bsp_movt.clockM->aimPosition;
 }
+
+
+
+uint8_t GetLevelMovtM_A(void)
+{
+	return bsp_movt.GetLevelMovtA(MOVT_M_CLOCK);
+}
+
+uint8_t GetLevelMovtM_B(void)
+{
+	return bsp_movt.GetLevelMovtB(MOVT_M_CLOCK);	
+}
+
+void SetLevelMovtM(uint8_t value)
+{
+	bsp_movt.SetLevel(MOVT_M_CLOCK, value);
+}

@@ -49,7 +49,6 @@ void DailyStepProcess(void)
     uint8_t     temp;
 	uint8_t     temp2;
     uint16_t     i = 0;
-	uint16_t    dailyTotalStepTemp;
 
 
 	memset(G_sensorBuf,0,256);
@@ -90,7 +89,6 @@ void DailyStepProcess(void)
 				
 				if(phoneState == PHONE_STATE_DAILY_SPORT)
 				{
-					dailyTotalStepTemp          = (uint16_t)dailyTotalStep;
 					BlePack(DEVICE_CUR_STEP, &bleSendMsg);
 				}
             }

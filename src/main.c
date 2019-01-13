@@ -1670,7 +1670,7 @@ int main(void)
     NRF_LOG_INFO("Debug logging for UART over RTT started.");
     // advertising_start(false);
 
-
+    M001StateRecover();
     // Enter main loop.
     for (;;)
     {

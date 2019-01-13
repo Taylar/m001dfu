@@ -14,7 +14,7 @@ uint8_t 	sportModeTime;
 uint8_t 	appPeerModeTime;
 uint8_t 	takePicModeTime;
 
-
+sysConfig_t sysConfig;
 
 void rtcisr(void)
 {
@@ -135,10 +135,12 @@ void  M001_AppInit(void)
 	DailySportInit();
 	// DataManageTest();
     // SetSinglePort(MOTO, LED_PORT_ACTIVE_STATE, 125, 125, 1);
-	SinglePortSetPolar(MOTO, MOTO_PORT_ACTIVE_STATE);
-	nrf_delay_ms(125);
-	SinglePortSetPolar(MOTO, !MOTO_PORT_ACTIVE_STATE);
+    
+	if(SysConfigLoad() == 0)
+		memcpy((char*)m001BraodcastName, (char*)sysConfig.brocastName, 16);
 }
+
+
 
 
 void M001_3Hshortkey(void)
@@ -244,6 +246,7 @@ void M001_3Hlongkey(void)
 
 void M001_3Hlongkey_6s(void)
 {
+	// UpgradePreProcess();
 	sd_nvic_SystemReset();
 }
 
@@ -258,7 +261,7 @@ void M001_KeyApp(uint32_t keyEvent)
 
 	if(DAILYAPP_MSG_SHORT_KEYS1_ISR & keyEvent)
 	{
-    	M001_3Hshortkey();
+    	// UpgradePreProcess();
 	}
 
 
@@ -439,7 +442,7 @@ uint8_t SysConfigLoad(void)
 	msgFlash.dataAddr = (uint8_t*)(&sysConfig);
 	msgFlash.length = sizeof(sysConfig_t);
 	ExtflashReadSysConfig(&msgFlash);
-	check = CheckCode8(sysConfig.movtLevelA, sysConfig.length);
+	check = CheckCode8(sysConfig.movtLevelA, sizeof(sysConfig_t));
 	if(check == sysConfig.checkCode)
 		return 0;
 	else
@@ -450,7 +453,7 @@ uint8_t SysConfigLoad(void)
 void SysConfigStore(void)
 {
 	extflash_task_msg_t msgFlash;
-	uint16_t check;
+
 
 
 	msgFlash.dataAddr   = (uint8_t*)(&sysConfig);
@@ -473,35 +476,93 @@ void SysConfigReset(void)
 	sysConfig.appMode = APP_NORMAL_MODE;
 	sysConfig.bleMode = BLE_SLEEP_MODE;
 	memcpy((char*)sysConfig.brocastName, (char*)m001BraodcastName, 16);
-	RtcTimeRead(&sysConfig.time)
+	RtcTimeRead(&sysConfig.time);
 	sysConfig.checkCode = CheckCode8(sysConfig.movtLevelA, sysConfig.length);
+	SysConfigStore();
 }
 
 void UpgradePreProcess(void)
 {
-	bleMode       = BLE_BROADCAST_MODE;
+	extflash_task_msg_t extflashMsg;
+	movt_task_msg_t movtMsg;
+
 	sysMode       = SYS_WORK_MODE;
 	phoneState    = APP_NORMAL_MODE;
 	appMode       = APP_NORMAL_MODE;
 	
 	sportModeTime = 0;
 
-		uint32_t dailyTotalStep;
-		uint32_t dailyStepSave;
-		uint32_t dailyStepAim;
-		uint16_t dailyStepComplete;
+	RtcTimeRead(&sysConfig.time);
 
+	movtMsg.id          = MOVT_MSG_MC_STOP;
+    MovtEventSet(movtMsg);
+
+    DailyStepSaveCache();
 
 	sysConfig.fwVersion = CONFIG_VER;
 	sysConfig.length = sizeof(sysConfig_t) - 8;
-	sysConfig.movtLevelA[0] = 0;
-	sysConfig.movtLevelB[0] = 0;
+	sysConfig.movtLevelA[0] = GetLevelMovtM_A();;
+	sysConfig.movtLevelB[0] = GetLevelMovtM_B();;
 	sysConfig.movtCurPos[0] = GetMovtCurPos();
-	sysConfig.totalStep = 0;
-	sysConfig.aimStep = ;
-	sysConfig.sysMode = SYS_WORK_MODE;
+	sysConfig.totalStep = dailyTotalStep;
+	sysConfig.aimStep = dailyStepAim;
+	sysConfig.sysMode = SYS_UPDATA_MODE;
 	sysConfig.appMode = APP_NORMAL_MODE;
 	sysConfig.bleMode = BLE_BROADCAST_MODE;
 	memcpy((char*)sysConfig.brocastName, (char*)m001BraodcastName, 16);
 	sysConfig.checkCode = CheckCode8(sysConfig.movtLevelA, sysConfig.length);
+	SysConfigStore();
+}
+
+
+
+void M001StateRecover(void)
+{
+	movt_task_msg_t movtMsg;
+
+	if(SysConfigLoad() == 0xff)
+    {
+    	SysConfigReset();
+    	SinglePortSetPolar(MOTO, MOTO_PORT_ACTIVE_STATE);
+		nrf_delay_ms(125);
+		SinglePortSetPolar(MOTO, !MOTO_PORT_ACTIVE_STATE);
+    }
+    else
+    {
+		if(sysConfig.sysMode == SYS_UPDATA_MODE)
+		{
+			sysConfig.sysMode = SYS_WORK_MODE;
+			SysConfigStore();
+
+			dailyTotalStep    = sysConfig.totalStep;
+			dailyStepAim      = sysConfig.aimStep;
+			sysMode           = sysConfig.sysMode;
+			bleMode           = sysConfig.bleMode;
+
+			SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 125, 125, 8);
+			// SetSinglePort(MOTO, MOTO_PORT_ACTIVE_STATE, 130, 130, 1);
+
+			bleMode       = BLE_BROADCAST_MODE;
+			sysMode       = SYS_WORK_MODE;
+			phoneState    = APP_NORMAL_MODE;
+			appMode       = APP_NORMAL_MODE;
+			
+			sportModeTime = 0;
+			RtcTimeWrite(&sysConfig.time);
+			
+			rtcApp.Start();
+			accel.bsp->BspInterfaceEnable();
+			bspAccel.SampleSet();
+			accel.bsp->BspInterfaceDisable();
+			advertising_start(true);
+
+
+	    	SetLevelMovtM(sysConfig.movtLevelA[0]);
+	    	movtMsg.id          = MOVT_MSG_MC_SET_CUR_AIM_FORWARD;
+		    movtMsg.cur         = sysConfig.movtCurPos[0];
+		    movtMsg.aim         = ExchangeTimeforCount(sysConfig.time.hour, sysConfig.time.min, sysConfig.time.sec);
+		    // NRF_LOG_INFO("cur:%d, aim:%d", movtMsg.cur, movtMsg.aim);
+		    MovtEventSet(movtMsg);
+		}
+    }
 }

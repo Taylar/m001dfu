@@ -1,6 +1,9 @@
 #include "general.h"
 
-#define     user_driver_pin_toggle(pin)     nrf_gpio_pin_toggle(pin)
+#define     user_driver_pin_toggle(pin)     			nrf_gpio_pin_toggle(pin)
+#define     user_driver_pin_out_read(pin)     			nrf_gpio_pin_out_read(pin)
+#define     user_driver_pin_out_write(pin, value)     	nrf_gpio_pin_write(pin, value)
+
 
 // hard ware pin define
 #define         MOVT_M_PINA                         MOVT_C_A
@@ -27,7 +30,10 @@ func    *MovtResverseFinishIsr[MOVT_MAX_NUM];
 void MovtclockCompare(movt_att_s *movtCompare);
 
 
-
+const uint8_t MOVT_PIN[MOVT_MAX_NUM][2] =
+{
+	{MOVT_M_PINA, MOVT_M_PINB},
+};
 
 
 // 31us every cnt
@@ -351,15 +357,36 @@ void BspMovtInit(void)
 	}
 }
 
+uint8_t GetLevelMovtA(uint8_t movtType)
+{
+	return user_driver_pin_out_read(MOVT_PIN[movtType][0]);
+}
+
+
+
+uint8_t GetLevelMovtB(uint8_t movtType)
+{
+	return user_driver_pin_out_read(MOVT_PIN[movtType][1]);
+}
+
+void BspMovtSetLevel(uint8_t movtType, uint8_t value)
+{
+	user_driver_pin_out_write(MOVT_PIN[movtType][0], value);
+	user_driver_pin_out_write(MOVT_PIN[movtType][1], value);
+}
+
 
 // movt
 const bsp_movt_s		bsp_movt = 
 {
-	.clockM							= &movtConfig[MOVT_M_CLOCK],
-	.Init							= BspMovtInit,
-	.ClockMFrowardFinishCbInit		= ClockMFrowardFinishCbInit,
-	.ClockMResverseFinishCbInit		= ClockMResverseFinishCbInit,
-	.Compare						= MovtclockCompare,
-	.ReadRunDir						= BspMovtRunDiretion,
-	// .SelfTest						= BspMovtSelfTest,
+	.clockM                     = &movtConfig[MOVT_M_CLOCK],
+	.Init                       = BspMovtInit,
+	.ClockMFrowardFinishCbInit  = ClockMFrowardFinishCbInit,
+	.ClockMResverseFinishCbInit = ClockMResverseFinishCbInit,
+	.Compare                    = MovtclockCompare,
+	.ReadRunDir                 = BspMovtRunDiretion,
+	// .SelfTest                = BspMovtSelfTest,
+	.GetLevelMovtA              = GetLevelMovtA,
+	.GetLevelMovtB              = GetLevelMovtB,
+	.SetLevel                   = BspMovtSetLevel,
 };

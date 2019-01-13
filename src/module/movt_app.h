@@ -63,5 +63,11 @@ uint16_t GetMovtCurPos(void);
 
 uint16_t GetMovtAimPos(void);
 
+uint8_t GetLevelMovtM_A(void);
+
+uint8_t GetLevelMovtM_B(void);
+
+void SetLevelMovtM(uint8_t value);
+
 
 #endif	//MOVTAPP_H

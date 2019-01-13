@@ -5,6 +5,7 @@ typedef enum
 {
 	SYS_POWEROFF_MODE = 0,
 	SYS_WORK_MODE,
+	SYS_UPDATA_MODE,
 	SYS_FACTORY_MODE,
 }sys_mode_e;
 
@@ -70,5 +71,12 @@ void M001_KeyApp(uint32_t keyEvent);
 
 void M001_RtcApp(void);
 
+uint8_t SysConfigLoad(void);
+
+void SysConfigStore(void);
+
+void UpgradePreProcess(void);
+
+void M001StateRecover(void);
 
 #endif   // M001_APP_H_

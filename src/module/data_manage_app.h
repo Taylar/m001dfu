@@ -14,6 +14,10 @@
 #define			CATALOG_INFO_LENGTH		32
 
 
+// 有效未上传数据0xFAFB, 有效已上传数据0xAABB
+#define			DATA_TYPE_VALID_UNUPLOAD   0XFAFB
+#define			DATA_TYPE_VALID_UPLOAD     0XAABB
+
 // 数据分类
 typedef enum
 {
@@ -44,6 +48,8 @@ typedef struct
 	uint16_t		sampleUnit;			// 数据采样单位
 	uint16_t		sampleInterval;		// 数据采样间隔
 	uint8_t			unitLength;			// 数据最小数据单位长度
+	uint16_t		validFlag;			// 有效未上传数据0xFAFB, 有效已上传数据0xAABB
+
 }catalogInfo_s;
 
 typedef union
@@ -104,6 +110,7 @@ typedef struct
 	uint16_t		(*DeleteClassifyData)(uint32_t dataClassify);
 	uint16_t		(*DeleteClassifyDataUtc)(uint32_t dataClassify, uint32_t utc);
 	uint16_t		(*StorageDataRecover)(void);
+	uint16_t		(*DeleteCacheData)(void);
 }dataManage_s;
 
 extern const dataManage_s	dataManage;

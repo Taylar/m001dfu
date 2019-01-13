@@ -4,7 +4,7 @@
 
 
 
-#define			DAILY_STEP_NULLPACKET_MAX		12
+#define			DAILY_STEP_NULLPACKET_MAX		2
 #define			DAILY_STEP_PACKET_MAX			8
 #define			DAILY_STEP_BYTE_LEN				2
 
@@ -88,22 +88,24 @@ void DailyStepSave(uint32_t utc, uint16_t step)
 				// 将剩余的缓存数据存入
 				dataManage.DataSave((uint8_t*)stepDataTemp, DAILY_STEP_BYTE_LEN * dailySteppacketCnt, STEPDATA_CLASSIFY);
 				dataManage.DataSaveEnd(STEPDATA_CLASSIFY);
+				ClearStepTemp();
+				dailyStepSaveState 			= DATA_SAVE_IDLE;
 				dailyStepNullpacketCnt		= 0;
 				dailySteppacketCnt			= 0;
 				return;
 			}
-			// 达到存储的空包数
+			// 达到存储的包数
 			if(DAILY_STEP_PACKET_MAX == dailySteppacketCnt)
 			{
 				dataManage.DataSave((uint8_t*)stepDataTemp, DAILY_STEP_BYTE_LEN * dailySteppacketCnt, STEPDATA_CLASSIFY);
-				dataManage.DataSaveEnd(STEPDATA_CLASSIFY);
-				dailyStepSaveState			= DATA_SAVE_IDLE;
+				// dataManage.DataSaveEnd(STEPDATA_CLASSIFY);
 				dailySteppacketCnt			= 0;
 			}
 		}
 	}
 	else
 	{
+		dailyStepNullpacketCnt = 0;
 		if(DATA_SAVE_IDLE == dailyStepSaveState)
 		{
 			catalogInfoTemp.utc				= utc;
@@ -124,6 +126,7 @@ void DailyStepSave(uint32_t utc, uint16_t step)
 		if(dailySteppacketCnt == DAILY_STEP_PACKET_MAX)
 		{
 			dataManage.DataSave((uint8_t*)stepDataTemp, DAILY_STEP_BYTE_LEN * dailySteppacketCnt, STEPDATA_CLASSIFY);
+			ClearStepTemp();
 			dailySteppacketCnt			= 0;
 		}
 	}
@@ -140,9 +143,10 @@ void DailyStepSaveCache(void)
 		{
 			dataManage.DataSave((uint8_t*)stepDataTemp, DAILY_STEP_BYTE_LEN * dailySteppacketCnt, STEPDATA_CLASSIFY);
 			dailySteppacketCnt		= 0;
-			dataManage.DataSaveEnd(STEPDATA_CLASSIFY);
-			dailyStepSaveState		= DATA_SAVE_IDLE;
 		}
+		dataManage.DataSaveEnd(STEPDATA_CLASSIFY);
+		ClearStepTemp();
+		dailyStepSaveState		= DATA_SAVE_IDLE;
 	}
 }
 
@@ -274,6 +278,7 @@ uint16_t DailyStepRequestData(uint32_t dataClassify, uint32_t utc, uint16_t pack
 	}
 
 	//bleSendMsg.load[0] = HDATA_CATA_INFO;
+	memset(dailyDataSendBug, 0, 20);
 	dailyDataSendBug[0] = (uint8_t)(dailyDataCurUploadPackNum >> 8);
 	dailyDataSendBug[1] = (uint8_t)(dailyDataCurUploadPackNum);
 	dailyDataSendBug[2] = (uint8_t)(dailyDataCurUploadClassify >> 8);
@@ -335,7 +340,7 @@ uint16_t DailyDataUploadProcess(void)
 	{
 		lengthTemp	= DAILY_DATA_UPLOAD_MAX_LEN;
 	}
-
+	memset(bleSendMsg.load, 0, 20);
 	bleSendMsg.load[0] = (uint8_t)(dailyDataCurUploadPackNum >> 8);
 	bleSendMsg.load[1] = (uint8_t)(dailyDataCurUploadPackNum);
 	bleSendMsg.load[2] = (uint8_t)(dailyDataCurUploadClassify >> 8);
@@ -375,7 +380,7 @@ uint16_t DailyDataTotalDelete(void)
 	uint16_t result;
 	
 
-	result = dataManage.DeleteTotalData();
+	result = dataManage.DeleteCacheData();
 
 	bleSendMsg.load[0] = HDATA_DEL_ALL;
 	bleSendMsg.length  = 2;

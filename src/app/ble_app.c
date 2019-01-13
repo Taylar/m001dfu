@@ -87,6 +87,7 @@ void BlePack(uint32_t command, protocal_msg_t *msg)
 
 
 		case DEVICE_UPDATA_COMMAND:
+		msg->length = 0;
 		break;
 
 
@@ -305,7 +306,7 @@ void BleProtocal(protocal_msg_t *msg)
 			break;
 
 			case HDATA_CATA_INFO:
-			 DailyStepCatalogInfoRead(((uint32_t)(msg->load[1]) << 8) + msg->load[2],
+			DailyStepCatalogInfoRead(((uint32_t)(msg->load[1]) << 8) + msg->load[2],
                                         ((uint32_t)(msg->load[3]) << 8) + msg->load[4]);
 			break;
 
@@ -335,6 +336,8 @@ void BleProtocal(protocal_msg_t *msg)
 
 
 		case APP_FW_UPDATA:
+		UpgradePreProcess();
+		BlePack(DEVICE_UPDATA_COMMAND, msg);
 		break;
 		
 		case APP_REQ_PEER:

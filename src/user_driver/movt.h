@@ -68,6 +68,9 @@ typedef struct
 	void	(*Compare)(movt_att_s *movtCompare);
 	uint16_t (*ReadRunDir)(movt_att_s *movtCompare);
 	uint16_t (*SelfTest)(void);
+	uint8_t (*GetLevelMovtA)(uint8_t movtType);
+	uint8_t (*GetLevelMovtB)(uint8_t movtType);
+	void     (*SetLevel)(uint8_t movtType, uint8_t value);
 }bsp_movt_s;
 
 extern const bsp_movt_s		bsp_movt;

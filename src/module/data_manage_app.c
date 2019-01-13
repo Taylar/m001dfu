@@ -3,10 +3,14 @@
 
 static const catalogInfo_u catalogWrite0Data = 
 {
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
-	0, 0, 0, 0, 0, 0, 0, 0,
+	.u.utc            = 0xffffffff,
+	.u.startAddr      = 0xffffffff,
+	.u.dataLength     = 0xffffffff,
+	.u.dataClassify   = 0xffffffff,
+	.u.sampleUnit     = 0xffff,
+	.u.sampleInterval = 0xffff,
+	.u.unitLength     = 0xff,
+	.u.validFlag      = DATA_TYPE_VALID_UPLOAD,
 };
 
 
@@ -61,6 +65,7 @@ static classify_data_info_s		dataClassifyInfo[DM_APP_DATA_CLASSIFY_NUM];
 typedef struct 
 {
 	uint8_t			valid;							// 总信息是否有效
+	uint8_t			num;							// 缓存目录数量
 	uint16_t		totalCatalog;					// 目录数量
 	uint16_t		dataClassify;					// 数据分类
 
@@ -196,6 +201,7 @@ uint16_t CreateCatalog(catalogInfo_s *dataInfo)
 	dataInfoTemp.u.sampleUnit		= dataInfo->sampleUnit;
 	dataInfoTemp.u.sampleInterval	= dataInfo->sampleInterval;
 	dataInfoTemp.u.unitLength		= dataInfo->unitLength;
+	dataInfoTemp.u.validFlag		= DATA_TYPE_VALID_UNUPLOAD;
 
 
 	dataClassifyInfo[classifyTemp].catalog				= dataInfoTemp.u;
@@ -349,10 +355,10 @@ uint16_t DataSaveEnd(uint32_t dataClassify)
 	// 将可写位置往后移动
 	dataClassifyInfo[dataClassify].catalogWritableStartAddr	+= CATALOG_INFO_LENGTH;
 
+	if(dataClassifyInfo[dataClassify].catalogWritableStartAddr > dataClassifyInfo[dataClassify].catalogAreaEndAddr)
+		dataClassifyInfo[dataClassify].catalogWritableStartAddr = dataClassifyInfo[dataClassify].catalogAreaStartAddr;
 	// 目录有效结束地址数据位置更新
 	dataClassifyInfo[dataClassify].catalogValidEndAddr		= dataClassifyInfo[dataClassify].catalogWritableStartAddr;
-	if(dataClassifyInfo[dataClassify].catalogValidEndAddr > dataClassifyInfo[dataClassify].catalogAreaEndAddr)
-		dataClassifyInfo[dataClassify].catalogValidEndAddr		= dataClassifyInfo[dataClassify].catalogAreaStartAddr;
 
 	// 数据有效结束地址更新
 	dataClassifyInfo[dataClassify].dataValidEndAddr		= dataClassifyInfo[dataClassify].dataWritableStartAddr;
@@ -691,8 +697,6 @@ uint16_t ClassifyDataInfoRead(uint16_t *catalogTotal, uint32_t *dataLength, uint
 	uint16_t				catalogTotalNumTemp;
 	uint32_t				dataLengthTemp;
 	uint32_t				readAddrTemp;
-	uint32_t				dataValidStartAddrTemp;
-	uint32_t				dataValidEndAddrTemp;
 
 	// 检查数据是否合法
 	if(dataClassify >= DM_APP_DATA_CLASSIFY_NUM)
@@ -720,70 +724,8 @@ uint16_t ClassifyDataInfoRead(uint16_t *catalogTotal, uint32_t *dataLength, uint
 		extflash.Read(&extflashMsg);
 
 		// 判断数据是否有效
-		if((catalogTemp.u.dataClassify == dataClassify) && (catalogTemp.u.dataLength != 0x00) && (catalogTemp.u.dataLength != 0xffffffff))
-		{
-
-//			// 判断该目录存放数据的地址是否在有效的数据范围内
-//			dataValidStartAddrTemp		= catalogTemp.u.startAddr;
-//			dataValidEndAddrTemp		= dataValidStartAddrTemp + catalogTemp.u.dataLength;
-
-//			// 数据已进行循环存储
-//			if(dataValidEndAddrTemp > dataClassifyInfo[dataClassify].dataAreaEndAddr)
-//				dataValidEndAddrTemp	= dataValidEndAddrTemp - dataClassifyInfo[dataClassify].dataAreaEndAddr - 1
-//											+ dataClassifyInfo[dataClassify].dataAreaStartAddr;
-//			
-
-//			// 写0该目录
-//			extflashMsg.startAddr	= readAddrTemp;
-//			extflashMsg.length		= CATALOG_INFO_LENGTH;
-//			extflashMsg.endAddr		= extflashMsg.startAddr + extflashMsg.length - 1;
-//			extflashMsg.id			= EXTFLASH_MSG_WRITE;
-//			extflashMsg.dataAddr	= (uint8_t *)(catalogWrite0Data.databuf);
-//			extflashMsg.Cb			= NULL;
-
-//			// 有效数据是否正向
-//			if(dataClassifyInfo[dataClassify].dataValidEndAddr >= dataClassifyInfo[dataClassify].dataValidStartAddr)
-//			{
-//				// 是否在有效数据范围外
-//				if((dataValidStartAddrTemp < dataClassifyInfo[dataClassify].dataValidStartAddr) ||
-//					(dataValidStartAddrTemp >= dataClassifyInfo[dataClassify].dataValidEndAddr) ||
-//					(dataValidEndAddrTemp <= dataClassifyInfo[dataClassify].dataValidStartAddr) ||
-//					(dataValidEndAddrTemp > dataClassifyInfo[dataClassify].dataValidEndAddr))
-//				{
-//					extflash.Write(&extflashMsg);
-//					if(readAddrTemp == dataClassifyInfo[dataClassify].catalogValidStartAddr)
-//					{
-//						// 更新目录有效地址开始地址
-//						dataClassifyInfo[dataClassify].catalogValidStartAddr		+= CATALOG_INFO_LENGTH;
-//						if(dataClassifyInfo[dataClassify].catalogValidStartAddr > dataClassifyInfo[dataClassify].catalogAreaEndAddr)
-//						{
-//							dataClassifyInfo[dataClassify].catalogValidStartAddr	= dataClassifyInfo[dataClassify].catalogAreaStartAddr;
-//						}
-//					}
-//				}
-//			}
-//			else
-//			{
-//				// 是否在有效数据范围外
-//				if(!((dataValidStartAddrTemp < dataClassifyInfo[dataClassify].dataValidEndAddr) ||
-//					(dataValidStartAddrTemp >= dataClassifyInfo[dataClassify].dataValidStartAddr) ||
-//					(dataValidEndAddrTemp <= dataClassifyInfo[dataClassify].dataValidEndAddr) ||
-//					(dataValidEndAddrTemp > dataClassifyInfo[dataClassify].dataValidStartAddr)))
-//				{
-//					extflash.Write(&extflashMsg);
-//					if(readAddrTemp == dataClassifyInfo[dataClassify].catalogValidStartAddr)
-//					{
-//						// 更新目录有效地址开始地址
-//						dataClassifyInfo[dataClassify].catalogValidStartAddr		+= CATALOG_INFO_LENGTH;
-//						if(dataClassifyInfo[dataClassify].catalogValidStartAddr > dataClassifyInfo[dataClassify].catalogAreaEndAddr)
-//						{
-//							dataClassifyInfo[dataClassify].catalogValidStartAddr	= dataClassifyInfo[dataClassify].catalogAreaStartAddr;
-//						}
-//					}
-//				}
-//			}
-
-			
+		if((catalogTemp.u.dataClassify == dataClassify) && (catalogTemp.u.validFlag == DATA_TYPE_VALID_UNUPLOAD) && (catalogTemp.u.dataLength != 0xffffffff))
+		{	
 			catalogTotalInfo.catalogInfo[catalogTotalNumTemp]	= catalogTemp.u;
 			catalogTotalInfo.catalogAddr[catalogTotalNumTemp]	= readAddrTemp;
 
@@ -825,7 +767,10 @@ uint16_t ClassifyDataInfoRead(uint16_t *catalogTotal, uint32_t *dataLength, uint
 	if(catalogTotalNumTemp == 0)
 		catalogTotalInfo.valid				= 0;
 	else
+	{
 		catalogTotalInfo.valid				= 1;
+		catalogTotalInfo.num				= catalogTotalNumTemp;
+	}
 
 
 	return 0x00;
@@ -988,6 +933,7 @@ uint16_t ReadCatalogDataLen(uint32_t *length, uint32_t dataUtc, uint32_t dataCla
 uint16_t DeleteTotalData(void)
 {
 	uint16_t i;
+	extflash_task_msg_t		extflashMsg;
 
 	for(i = 0; i < DM_APP_DATA_CLASSIFY_NUM; i++)
 	{
@@ -1009,6 +955,15 @@ uint16_t DeleteTotalData(void)
 			dataClassifyInfo[i].dataWritableLength			= 0;
 			dataClassifyInfo[i].dataValidStartAddr			= dataClassifyInfo[i].dataAreaStartAddr;
 			dataClassifyInfo[i].dataValidEndAddr			= dataClassifyInfo[i].dataAreaStartAddr;
+			
+			// 擦除第一个目录的数据
+			extflashMsg.startAddr	= dataClassifyInfo[i].catalogAreaStartAddr;
+			extflashMsg.length		= DM_APP_SECTOR_LENGTH;
+			extflashMsg.endAddr		= extflashMsg.startAddr + 4095;
+			extflashMsg.id			= EXTFLASH_MSG_4K_ERASE;
+			extflashMsg.Cb			= NULL;
+			extflashMsg.result		= 0;
+			extflash.Erase_4K(&extflashMsg);
 		}
 	}
 
@@ -1024,6 +979,7 @@ uint16_t DeleteTotalData(void)
 // 				0xff: 操作失败
 uint16_t DeleteClassifyData(uint32_t dataClassify)
 {
+	extflash_task_msg_t		extflashMsg;
 
 	if(dataClassifyInfo[dataClassify].init == 1)
 	{
@@ -1042,6 +998,15 @@ uint16_t DeleteClassifyData(uint32_t dataClassify)
 		dataClassifyInfo[dataClassify].dataWritableLength			= 0;
 		dataClassifyInfo[dataClassify].dataValidStartAddr			= dataClassifyInfo[dataClassify].dataAreaStartAddr;
 		dataClassifyInfo[dataClassify].dataValidEndAddr				= dataClassifyInfo[dataClassify].dataAreaStartAddr;
+		
+		// 擦除第一个目录的数据
+		extflashMsg.startAddr	= dataClassifyInfo[dataClassify].catalogAreaStartAddr;
+		extflashMsg.length		= DM_APP_SECTOR_LENGTH;
+		extflashMsg.endAddr		= extflashMsg.startAddr + 4095;
+		extflashMsg.id			= EXTFLASH_MSG_4K_ERASE;
+		extflashMsg.Cb			= NULL;
+		extflashMsg.result		= 0;
+		extflash.Erase_4K(&extflashMsg);
 	}
 	else
 	{
@@ -1098,6 +1063,7 @@ uint16_t  DeleteClassifyDataUtc(uint32_t dataClassify, uint32_t utc)
 // 				0xff: 操作失败
 uint16_t StorageDataRecover(void)
 {
+	uint8_t  buf[16];
 	uint16_t i;
 	uint32_t addrTemp;
 	uint32_t earlyCatalogAddr;
@@ -1110,20 +1076,15 @@ uint16_t StorageDataRecover(void)
 	catalogInfo_s	lastCatalog;
 	catalogInfo_u 	catalogTemp;
 
-
-
-	
-
 	// 区域未进行分配
 	if(catalogAreaManage.validLength == DM_APP_CATALOG_AREA_LENGTH)
 		return 0xff;
 
 	for(i = 0; i < DM_APP_DATA_CLASSIFY_NUM; i++)
 	{
-		lastCatalog.utc		= 0;
-		earlyCatalog.utc	= 0xffffffff;
 		if(dataClassifyInfo[i].init == 1)
 		{
+            lastCatalog.utc = 0;
 			addrTemp		= dataClassifyInfo[i].catalogAreaStartAddr;
 			while(addrTemp < dataClassifyInfo[i].catalogAreaEndAddr)
 			{
@@ -1136,18 +1097,16 @@ uint16_t StorageDataRecover(void)
 				extflash.Read(&extflashMsg);
 
 				// 判断存储的数据是否有效
-				if((catalogTemp.u.dataClassify == i) && ((catalogTemp.u.dataLength != 0) || (catalogTemp.u.dataLength == 0xffffffff)))
+				if((catalogTemp.u.dataClassify == i) && 
+					((catalogTemp.u.validFlag == DATA_TYPE_VALID_UNUPLOAD) || (catalogTemp.u.validFlag == DATA_TYPE_VALID_UPLOAD)))
 				{
-					if(lastCatalog.utc < catalogTemp.u.utc)
-					{
-						lastCatalog		= catalogTemp.u;
-						lastCatalogAddr	= addrTemp;
-					}
-					if(earlyCatalog.utc > catalogTemp.u.utc)
-					{
-						earlyCatalog		= catalogTemp.u;
+                    if(addrTemp == dataClassifyInfo[i].catalogAreaStartAddr)
+                    {
+                        earlyCatalog		= catalogTemp.u;
 						earlyCatalogAddr	= addrTemp;
-					}
+                    }
+					lastCatalog		= catalogTemp.u;
+					lastCatalogAddr	= addrTemp;
 				}
 				else
 				{
@@ -1164,76 +1123,79 @@ uint16_t StorageDataRecover(void)
 			else
 			{
 				// 目录区域恢复
-				if(lastCatalogAddr >= earlyCatalogAddr)
+				// 未跨结束与开始地址
+				dataClassifyInfo[i].catalogCycle	= 0;
+
+				dataClassifyInfo[i].catalogValidStartAddr	= earlyCatalogAddr;
+
+				dataClassifyInfo[i].catalogWritableStartAddr = lastCatalogAddr;
+
+				
+
+
+
+				
+				// 对最后一个目录进行数据恢复
+				if(lastCatalog.dataLength == 0xffffffff)
 				{
-					// 未跨结束与开始地址
-					dataClassifyInfo[i].catalogCycle	= 0;
+					uint16_t validDataCnt, m, dataOffectAddr;
 
-					dataClassifyInfo[i].catalogValidStartAddr	= earlyCatalogAddr;
+					dataOffectAddr = 0;
+					lastCatalog.dataLength = 0;
 
-					dataClassifyInfo[i].catalogValidEndAddr		= lastCatalogAddr + CATALOG_INFO_LENGTH;
-
-					// 有效目录地址越界
-					if(dataClassifyInfo[i].catalogValidEndAddr > dataClassifyInfo[i].catalogAreaEndAddr)
-						dataClassifyInfo[i].catalogValidEndAddr		= dataClassifyInfo[i].catalogAreaStartAddr;
-
-					// 目录结束位置是否刚好为块开始地址
-					if((dataClassifyInfo[i].catalogValidEndAddr % DM_APP_SECTOR_LENGTH) == 0)
+					while(1)
 					{
-						dataClassifyInfo[i].catalogWritableStartAddr	= dataClassifyInfo[i].catalogValidEndAddr;
-						dataClassifyInfo[i].catalogWritableLength	= 0;
-					}
-					else
-					{
-						// 丢弃下一个目录，可能目录不完整,可进行部分恢复，根据需求做修改
-						dataClassifyInfo[i].catalogWritableStartAddr	= dataClassifyInfo[i].catalogValidEndAddr + CATALOG_INFO_LENGTH;
-
-						if(dataClassifyInfo[i].catalogWritableStartAddr > dataClassifyInfo[i].catalogAreaEndAddr)
-							dataClassifyInfo[i].catalogWritableStartAddr		= dataClassifyInfo[i].catalogAreaStartAddr;
-
-						// 是否刚好跨块
-						if((dataClassifyInfo[i].catalogWritableStartAddr % DM_APP_SECTOR_LENGTH) == 0)
+						extflashMsg.startAddr	= lastCatalog.startAddr + dataOffectAddr;
+						extflashMsg.length		= lastCatalog.unitLength;
+						extflashMsg.endAddr		= extflashMsg.startAddr + extflashMsg.length - 1;
+						extflashMsg.id			= EXTFLASH_MSG_READ;
+						extflashMsg.dataAddr	= buf;
+						extflashMsg.Cb			= NULL;
+						extflash.Read(&extflashMsg);
+						validDataCnt = 0;
+						for(m = 0; m < lastCatalog.unitLength; m++)
 						{
-							dataClassifyInfo[i].catalogWritableLength	= 0;
+							if(buf[m] == 0xff)
+								validDataCnt++;
 						}
+						if(validDataCnt == lastCatalog.unitLength)
+							break;
 						else
-						{
-							dataClassifyInfo[i].catalogWritableLength = 
-								DM_APP_SECTOR_LENGTH - (dataClassifyInfo[i].catalogWritableStartAddr%DM_APP_SECTOR_LENGTH);
-						}
+							lastCatalog.dataLength += lastCatalog.unitLength;
 
+						dataOffectAddr += lastCatalog.unitLength;
+						if(((dataOffectAddr + lastCatalog.startAddr) % DM_APP_SECTOR_LENGTH) == 0)
+							break;
 					}
+
+					dataClassifyInfo[i].catalog = lastCatalog;
+					dataClassifyInfo[i].occupy = 1;
 				}
 				else
 				{
-					// 跨结束与开始地址
-					dataClassifyInfo[i].catalogCycle	= 1;
-
-					dataClassifyInfo[i].catalogValidStartAddr	= earlyCatalogAddr;
-
-					dataClassifyInfo[i].catalogValidEndAddr		= lastCatalogAddr + CATALOG_INFO_LENGTH;
-
-					// 目录结束位置是否刚好为块开始地址
-					if((dataClassifyInfo[i].catalogValidEndAddr % DM_APP_SECTOR_LENGTH) == 0)
-					{
-						dataClassifyInfo[i].catalogWritableStartAddr	= dataClassifyInfo[i].catalogValidEndAddr;
-						dataClassifyInfo[i].catalogWritableLength	= 0;
-					}
-					else
-					{
-						// 丢弃下一个目录，可能目录不完整,可进行部分恢复，根据需求做修改
-						dataClassifyInfo[i].catalogWritableStartAddr	= dataClassifyInfo[i].catalogValidEndAddr + CATALOG_INFO_LENGTH;
-
-
-						dataClassifyInfo[i].catalogWritableLength = 
-							DM_APP_SECTOR_LENGTH - (dataClassifyInfo[i].catalogWritableStartAddr%DM_APP_SECTOR_LENGTH);
-
-					}
+					// 目录均为完整数据，将下一个可写目录地址后移
+					dataClassifyInfo[i].catalogWritableStartAddr	+= CATALOG_INFO_LENGTH;
+					if(dataClassifyInfo[i].catalogWritableStartAddr > dataClassifyInfo[i].catalogAreaEndAddr)
+						dataClassifyInfo[i].catalogWritableStartAddr = dataClassifyInfo[i].catalogAreaStartAddr;
 				}
 
+				dataClassifyInfo[i].catalogValidEndAddr = dataClassifyInfo[i].catalogWritableStartAddr;
+
+				// 目录结束位置是否刚好为块开始地址
+				if((dataClassifyInfo[i].catalogWritableStartAddr % DM_APP_SECTOR_LENGTH) == 0)
+				{
+					dataClassifyInfo[i].catalogWritableLength	= 0;
+				}
+				else
+				{
+					dataClassifyInfo[i].catalogWritableLength = 
+						DM_APP_SECTOR_LENGTH - (dataClassifyInfo[i].catalogWritableStartAddr%DM_APP_SECTOR_LENGTH);
+				}
+
+
 				// 数据区域恢复
-				lastDataAddr	= lastCatalog.startAddr;
-				earlyDataAddr	= earlyCatalog.startAddr + earlyCatalog.dataLength;
+				lastDataAddr	= lastCatalog.startAddr + lastCatalog.dataLength;
+				earlyDataAddr	= earlyCatalog.startAddr;
 
 				if(lastDataAddr > dataClassifyInfo[i].dataAreaEndAddr)
 					lastDataAddr -= dataClassifyInfo[i].dataAreaEndAddr + dataClassifyInfo[i].dataAreaStartAddr;
@@ -1353,6 +1315,17 @@ void DataManageTest(void)
 	// }
 }
 
+uint16_t DeleteCacheData(void)
+{
+	uint16_t i;
+	for(i = 0; i < catalogTotalInfo.num; i++)
+	{
+		DeleteClassifyDataUtc(catalogTotalInfo.dataClassify, catalogTotalInfo.catalogInfo[i].utc);
+	}
+    return 0;
+}
+
+
 // // dataManage
 const dataManage_s dataManage =
 {
@@ -1369,4 +1342,5 @@ const dataManage_s dataManage =
 	.DeleteClassifyData			= DeleteClassifyData,
 	.DeleteClassifyDataUtc		= DeleteClassifyDataUtc,
 	.StorageDataRecover			= StorageDataRecover,
+	.DeleteCacheData			= DeleteCacheData,
 };
