@@ -49,7 +49,16 @@ typedef enum
 }ble_mode_e;
 
 
+typedef enum 
+{
+	POWER_SLEEP_MODE = 0,
+	POWER_SWITCH_WORK_MODE,
+	POWER_WORK_MODE,
+	POWER_SWITCH_SLEEP_MODE,
+}power_mode_e;
 
+
+extern uint16_t powerMode;
 extern uint16_t	sysMode;
 extern uint16_t	appMode;
 extern uint16_t	phoneState;
@@ -78,5 +87,9 @@ void SysConfigStore(void);
 void UpgradePreProcess(void);
 
 void M001StateRecover(void);
+
+void SwitchToSleepPowerMode(void);
+
+void SwitchToWorkPowerMode(void);
 
 #endif   // M001_APP_H_

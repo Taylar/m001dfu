@@ -1,5 +1,5 @@
 #include "general.h"
-
+#include <math.h>
 
 typedef struct
 {
@@ -312,4 +312,38 @@ int actionRecongnition(unsigned char xyzDataTemp[3])
         return stepdata;
 }
 
+#define WATCH_ENTER_SLEEP_TIME   120
+static uint32_t sleepKeepTime;
+uint8_t ActionDetect(int8_t axis[3])
+{
+    static int8_t lastAxis[3];
 
+    if(abs((axis[0]-lastAxis[0]) > 3) || 
+        abs((axis[1]-lastAxis[1]) > 3) ||
+        abs((axis[2]-lastAxis[2]) > 4)){
+        sleepKeepTime = 0;
+    }
+    else
+        sleepKeepTime++;
+
+    // NRF_LOG_INFO("SleepTime:%d, %d,%d,%d\n", sleepKeepTime,abs(axis[0]-lastAxis[0]),
+    // abs(axis[1]-lastAxis[1]), abs(axis[2]-lastAxis[2]) );
+    memcpy(lastAxis, axis, 3);
+
+    if(sleepKeepTime == 0 && powerMode == POWER_SLEEP_MODE)
+        powerMode = POWER_SWITCH_WORK_MODE;
+
+    if(sleepKeepTime > WATCH_ENTER_SLEEP_TIME && powerMode == POWER_WORK_MODE)
+        powerMode = POWER_SWITCH_SLEEP_MODE;
+}
+
+uint16_t GetActionState(void)
+{
+    return powerMode; 
+}
+
+
+void SetActionState(uint16_t powerState)
+{
+    powerMode = powerState;
+}

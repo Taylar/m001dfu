@@ -2,7 +2,7 @@
 
 #define		SPORTAIM_REMAIN_TIME		5
 
-
+uint16_t    powerMode;
 uint16_t	sysMode;
 uint16_t	appMode;
 uint16_t	phoneState;
@@ -565,4 +565,33 @@ void M001StateRecover(void)
 		    MovtEventSet(movtMsg);
 		}
     }
+}
+
+static uint16_t bleModeTemp;
+void SwitchToSleepPowerMode(void)
+{
+	bleModeTemp = bleMode;
+	if(bleMode == BLE_BROADCAST_MODE)
+    {
+    	advertising_stop();
+    }
+    else
+    {
+    	ble_disconnect_req();
+    }
+	bleMode = BLE_SLEEP_MODE;
+
+	SetActionState(POWER_SLEEP_MODE);
+	// SetSinglePort(RED_LED, LED_PORT_ACTIVE_STATE, 125, 125, 8);
+}
+
+void SwitchToWorkPowerMode(void)
+{
+	if(bleModeTemp == BLE_BROADCAST_MODE || BLE_CONNECT_MODE == bleModeTemp)
+	{
+		bleMode = BLE_BROADCAST_MODE;
+		advertising_start(false);
+	}
+	SetActionState(POWER_WORK_MODE);
+	// SetSinglePort(GREEN_LED, LED_PORT_ACTIVE_STATE, 125, 125, 8);
 }

@@ -61,6 +61,18 @@ void DailyStepProcess(void)
 
     buflength = buflength/3;
     rejectCall = 0;
+    ActionDetect((int8_t *)G_sensorBuf);
+    if(GetActionState() == POWER_SWITCH_SLEEP_MODE)
+    {
+    	SwitchToSleepPowerMode();
+    }
+    else if(GetActionState() == POWER_SWITCH_WORK_MODE)
+    {
+    	SwitchToWorkPowerMode();
+    }
+    else if(GetActionState() == POWER_SLEEP_MODE)
+    	return;
+
     if(buflength)
     {
         while(buflength--)
