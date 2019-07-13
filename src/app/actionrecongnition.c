@@ -312,7 +312,7 @@ int actionRecongnition(unsigned char xyzDataTemp[3])
         return stepdata;
 }
 
-#define WATCH_ENTER_SLEEP_TIME   120
+#define WATCH_ENTER_SLEEP_TIME   (60*60)    //1检测到连续1小时处于休眠
 static uint32_t sleepKeepTime;
 uint8_t ActionDetect(int8_t axis[3])
 {
