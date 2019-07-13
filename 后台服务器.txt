@@ -1,0 +1,5 @@
+请求地址：http://47.98.220.64:2223/version/getMcuVersion?platform=2
+
+后台地址：http://server.xunmovt.com
+账号：admin
+密码：Zheng123456
